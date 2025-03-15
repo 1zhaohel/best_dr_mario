@@ -1,13 +1,8 @@
 ################# CSC258 Assembly Final Project ###################
 # This file contains our implementation of Dr Mario.
 #
-<<<<<<< Updated upstream
 # Student 1: Helen Zhao, 1010138995
-# Student 2: Name, Student Number (if applicable)
-=======
-# Student 1: Name, Student Number
 # Student 2: Alan Su, 1010294209
->>>>>>> Stashed changes
 #
 # We assert that the code submitted here is entirely our own 
 # creation, and will indicate otherwise when it is not.
