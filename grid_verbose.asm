@@ -326,7 +326,7 @@ rotate_three_to_six:
 
     # End if block is at bottom border
     lw $t0, MAX_Y
-    bge $s1, $t0, end_unstack
+    bge $s1, $t0, end_rotate_three_to_six
     
     # End if block collides with other block
     li $a0, 0
@@ -334,12 +334,17 @@ rotate_three_to_six:
     move $a2, $s0
     move $a3, $s1
     jal get_collision
-    beq $v0, 1, end_unstack
+    beq $v0, 1, end_rotate_three_to_six
     
     move $s3, $s0
     addi $s4, $s1, 1
     
-    j end_unstack
+    end_rotate_three_to_six:
+    
+    # Restore $ra
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr $ra
 
 rotate_six_to_nine:
     # Save $ra
@@ -348,7 +353,7 @@ rotate_six_to_nine:
 
     # End if block is at bottom border
     lw $t0, MIN_X
-    ble $s0, $t0, end_unstack
+    ble $s0, $t0, end_rotate_six_to_nine
     
     # End if block collides with other block
     li $a0, -1
@@ -356,12 +361,17 @@ rotate_six_to_nine:
     move $a2, $s0
     move $a3, $s1
     jal get_collision
-    beq $v0, 1, end_unstack
+    beq $v0, 1, end_rotate_six_to_nine
     
     move $s4, $s1
     subi $s3, $s0, 1
     
-    j end_unstack
+    end_rotate_six_to_nine:
+    
+    # Restore $ra
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr $ra
 
 rotate_nine_to_twelve:
     # Save $ra
@@ -370,7 +380,7 @@ rotate_nine_to_twelve:
 
     # End if block is at bottom border
     lw $t0, MIN_Y
-    ble $s1, $t0, end_unstack
+    ble $s1, $t0, end_rotate_nine_to_twelve
     
     # End if block collides with other block
     li $a0, 0
@@ -378,12 +388,17 @@ rotate_nine_to_twelve:
     move $a2, $s0
     move $a3, $s1
     jal get_collision
-    beq $v0, 1, end_unstack
+    beq $v0, 1, end_rotate_nine_to_twelve
     
     move $s3, $s0
     subi $s4, $s1, 1
     
-    j end_unstack
+    end_rotate_nine_to_twelve:
+    
+    # Restore $ra
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr $ra
 
 rotate_twelve_to_three:
     # Save $ra
@@ -392,7 +407,7 @@ rotate_twelve_to_three:
 
     # End if block is at bottom border
     lw $t0, MAX_X
-    bge $s0, $t0, end_unstack
+    bge $s0, $t0, end_rotate_twelve_to_three
     
     # End if block collides with other block
     li $a0, 1
@@ -400,12 +415,17 @@ rotate_twelve_to_three:
     move $a2, $s0
     move $a3, $s1
     jal get_collision
-    beq $v0, 1, end_unstack
+    beq $v0, 1, end_rotate_twelve_to_three
     
     move $s4, $s1
     addi $s3, $s0, 1
     
-    j end_unstack
+    end_rotate_twelve_to_three:
+    
+    # Restore $ra
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr $ra
 
 move_left:
     # Save $ra
@@ -414,20 +434,25 @@ move_left:
 
     # End if block is at left border
     lw $t0, MIN_X
-    ble $s0, $t0, end_unstack
-    ble $s3, $t0, end_unstack
+    ble $s0, $t0, end_move_left
+    ble $s3, $t0, end_move_left
     
     # End if block collides with other block
     li $a0, -1
     li $a1, 0
     jal get_block_collision
-    beq $v0, 1, end_unstack
+    beq $v0, 1, end_move_left
     
     # Move 1 step left
     subi $s0, $s0, 1
     subi $s3, $s3, 1
     
-    j end_unstack
+    end_move_left:
+    
+    # Restore $ra
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr $ra
 
 move_down:
     # Save $ra
@@ -448,13 +473,18 @@ move_down:
     # Move 1 step down
     addi $s1, $s1, 1
     addi $s4, $s4, 1
-    j end_unstack
+    j end_move_down
     
     place_down_block:
     jal update_block
     jal generate_block
     
-    j end_unstack
+    end_move_down:
+    
+    # Restore $ra
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr $ra
 
 move_right:
     # Save $ra
@@ -463,20 +493,25 @@ move_right:
     
     # End of block is at right border
     lw $t0, MAX_X
-    bge $s0, $t0, end_unstack
-    bge $s3, $t0, end_unstack
+    bge $s0, $t0, end_move_right
+    bge $s3, $t0, end_move_right
     
     # End if block collides with other block
     li $a0, 1
     li $a1, 0
     jal get_block_collision
-    beq $v0, 1, end_unstack
+    beq $v0, 1, end_move_right
     
     # Move 1 step right
     addi $s0, $s0, 1
     addi $s3, $s3, 1
     
-    j end_unstack
+    end_move_right:
+    
+    # Restore $ra
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr $ra
 
 get_collision:
     # $a0 = 1 if going right, $a0 = -1 if going left, $a1 = 1 if going down, rest are 0
@@ -495,15 +530,20 @@ get_collision:
     jal get_pixel
     lw $t0, BACKGROUND_COLOR
     bne $v0, $t0, has_collision
-    j end_unstack
+    j end_get_collision
     
     has_collision:
         li $v0, 1
-        j end_unstack
+        j end_get_collision
     
     li $v0, 0
     
-    j end_unstack
+    end_get_collision:
+    
+    # Restore $ra
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr $ra
 
 get_block_collision:
     # $a0 = 1 if going right, $a0 = -1 if going left, $a1 = 1 if going down, rest are 0
