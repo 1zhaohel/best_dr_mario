@@ -82,66 +82,6 @@ keyboard_input:
     
     jr $ra
 
-# main:
-    # li $s0, 32                  # Initialize starting coordinates (x = 32)
-    # li $s1, 32                  # Initialize starting coordinates (y = 32)
-    
-    # jal initialize_grid         # Initialize grid
-    # jal draw_grid               # Draw grid
-    
-    # j game_loop                 # Start the game loop
-
-# initialize_grid:
-    # la $t0, GRID                # Load base address of grid into $t0
-    # lw $t1, GRID_SIZE           # Load grid size into $t1
-    # add $t1, $t1, $t0           # Specify max index in $t1 (end address)
-    # lw $t2, PIXEL_SIZE          # Load pixel size into $t2
-    # lw $t3, YELLOW_COLOR        # Load yellow color into $t3
-    
-# while_initialize_grid:
-    # bge $t0, $t1, exit_initialize_grid  # If $t0 >= end of grid, exit
-    # sw $t3, 0($t0)             # Store yellow color in current grid cell
-    # add $t0, $t0, $t2          # Increment grid address by pixel size
-    # j while_initialize_grid     # Continue loop
-
-# exit_initialize_grid:
-    # jr $ra                      # Return from function
-
-# draw_grid:
-    # la $t0, GRID                # Load grid base address into $t0
-    # lw $t1, GRID_SIZE           # Load grid size into $t1
-    # add $t1, $t1, $t0           # Calculate max index (end address)
-    # lw $t2, PIXEL_SIZE          # Load pixel size into $t2
-    # lw $t3, ADDR_DSPL           # Load display base address into $t3
-
-# while_draw_grid:
-    # bge $t0, $t1, exit_draw_grid  # If $t0 >= end of grid, exit
-    # lw $t4, 0($t0)               # Load pixel color from grid
-    # sw $t4, 0($t3)               # Store pixel color to display
-    # add $t0, $t0, $t2            # Increment grid address by pixel size
-    # add $t3, $t3, $t2            # Increment display address by pixel size
-    # j while_draw_grid            # Continue loop
-
-# exit_draw_grid:
-    # jr $ra                       # Return from function
-
-# game_loop:
-    # jal keyboard_input           # Get keyboard input
-    # jal draw_pixel               # Draw pixel (or update display)
-    
-    # j game_loop                  # Continue game loop
-
-# keyboard_input:
-    # li $v0, 32                   # Load syscall to read character (32 = read char)
-    # li $a0, 1                    # Specify file descriptor (stdin)
-    # syscall                      # Read character input
-    
-    # lw $t0, ADDR_KBRD            # Load base address for keyboard input into $t0
-    # lw $t1, 0($t0)               # Load keyboard input from the mapped address
-    # beq $t1, 1, handle_input     # If key is pressed (value 1), handle it
-    
-    # jr $ra                       # Return from function
-
 handle_input:                       # A key is pressed
     # $t0 = keyboard address, $t1 = full keyboard input
     lw $a0, 4($t0)                  # Load second word from keyboard
