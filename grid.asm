@@ -41,13 +41,25 @@ BACKGROUND_COLOR:
     .text
 	.globl main
 
+# Macro Definitions
+    .macro SAVE_RA()
+        sub $sp, $sp, 4
+        sw $ra, 0($sp)
+    .end_macro
+
+    .macro RESTORE_RA()
+        lw $ra, 0($sp)
+        addi $sp, $sp, 4
+    .end_macro
+
+
 ##############################################################################
 # MAIN 
 ##############################################################################
 
 main:
     jal generate_block
-    li $s6, 0               # Initialize timer to 0
+    jal reset_timer
     jal initialize_grid
     jal draw_grid
     
@@ -60,9 +72,8 @@ main:
 end:
     jr $ra
 
-end_unstack:
-    lw $ra, 0($sp)
-    addi $sp, $sp, 4
+end_restore_ra:
+    RESTORE_RA()
     jr $ra
 
 initialize_grid:
@@ -93,8 +104,7 @@ draw_grid:
 
 generate_block:
     # Save $ra (in main after generate_block) and restore after random_color
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
+    SAVE_RA()
     
     lw $t0 DISPLAY_WIDTH
     li $t1 2
@@ -114,8 +124,7 @@ generate_block:
     move $s5, $v0
     
     # Restore $ra (in main after generate_block) after random_color
-    lw $ra, 0($sp)
-    addi $sp, $sp, 4
+    RESTORE_RA()
     jr $ra
 
 random_color:
@@ -129,17 +138,17 @@ random_color:
     beq $a0, 1, set_color_yellow
     beq $a0, 2, set_color_blue
     
-set_color_red:
-    lw $v0, RED_COLOR
-    jr $ra                  # Return to call in generate_block
-
-set_color_yellow:
-    lw $v0, YELLOW_COLOR
-    jr $ra                  # Return to call in generate_block
-
-set_color_blue:
-    lw $v0, BLUE_COLOR
-    jr $ra                  # Return to call in generate_block
+    set_color_red:
+        lw $v0, RED_COLOR
+        jr $ra                  # Return to call in generate_block
+    
+    set_color_yellow:
+        lw $v0, YELLOW_COLOR
+        jr $ra                  # Return to call in generate_block
+    
+    set_color_blue:
+        lw $v0, BLUE_COLOR
+        jr $ra                  # Return to call in generate_block
 
 ##############################################################################
 # GAME LOOP
@@ -158,31 +167,25 @@ game_loop:
 ##############################################################################
 
 update_block:
-    # Save $ra
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
+    SAVE_RA()
 
     # Draw new pixel position
     li $a0, 1
     jal draw_block
     
-    # Restore $ra
-    lw $ra, 0($sp)
-    addi $sp, $sp, 4
+    RESTORE_RA()
     jr $ra
 
 clear_block:
     # Save $ra (in game_loop after clear_block) before draw_block
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
+    SAVE_RA()
     
     # Remove old block position
     li $a0, 0
     jal draw_block
     
     # Restore $ra (in game_loop after clear_block) after draw_block
-    lw $ra, 0($sp)
-    addi $sp, $sp, 4
+    RESTORE_RA()
     jr $ra
 
 draw_block:
@@ -208,7 +211,6 @@ draw_block:
     
     # Restore $t0 after set_pixel
     lw $t0, 0($sp)
-    addi $sp, $sp, 4
     
     # Half #2
     move $a0, $s3                   # Load the x-coordinate ($s3) into $a0
@@ -222,8 +224,8 @@ draw_block:
         jal set_pixel                   # Draw the pixel at the x and y-coordinate
     
     # Restore $ra after set_pixel
-    lw $ra, 0($sp)
-    addi $sp, $sp, 4
+    lw $ra, 4($sp)
+    addi $sp, $sp, 8
     jr $ra
 
 ##############################################################################
@@ -232,8 +234,7 @@ draw_block:
 
 keyboard_input:
     # Save $ra (in main after keyboard_input)
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
+    SAVE_RA()
     
     li $v0, 32                      # Load system call to read character
     li $a0, 1                       # Specify file descriptor (stdin)
@@ -246,26 +247,13 @@ keyboard_input:
     after_handle_input:
     
     # Restore $ra (in main after keyboard_input)
-    lw $ra, 0($sp)
-    addi $sp, $sp, 4
+    RESTORE_RA()
     jr $ra
 
 handle_input:
     # $a0 = full keyboard input
     
-    # Save $ra (in keyboard_input)
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
-    
     lw $a0, 4($a0)                  # Load second word from keyboard
-    
-    # Save inputted character ($a0) and restore after set_pixel
-    sub $sp, $sp, 4
-    sw $a0, 0($sp) 
-    
-    # Restore inputted character ($a0) after set_pixel
-    lw $a0, 0($sp)
-    addi $sp, $sp, 4
     
     li $v0, 1                      # Set output
     syscall                         # Print inputted character ($a0)
@@ -293,9 +281,7 @@ end_game:
 	syscall
 
 rotate:
-    # Save $ra
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
+    SAVE_RA()
     
     la $ra, after_rotate_block
     
@@ -314,211 +300,223 @@ rotate:
     
     after_rotate_block:
     
-    # Restore $ra
-    lw $ra, 0($sp)
-    addi $sp, $sp, 4
+    RESTORE_RA()
     jr $ra
 
 rotate_three_to_six:
-    # Save $ra
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
-
-    # End if block is at bottom border
-    lw $t0, MAX_Y
-    bge $s1, $t0, end_unstack
+    SAVE_RA()
     
-    # End if block collides with other block
     li $a0, 0
     li $a1, 1
-    move $a2, $s0
-    move $a3, $s1
-    jal get_collision
-    beq $v0, 1, end_unstack
+    jal rotate_block
     
-    move $s3, $s0
-    addi $s4, $s1, 1
-    
-    j end_unstack
+    j end_restore_ra
 
 rotate_six_to_nine:
-    # Save $ra
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
-
-    # End if block is at bottom border
-    lw $t0, MIN_X
-    ble $s0, $t0, end_unstack
+    SAVE_RA()
     
-    # End if block collides with other block
     li $a0, -1
     li $a1, 0
-    move $a2, $s0
-    move $a3, $s1
-    jal get_collision
-    beq $v0, 1, end_unstack
+    jal rotate_block
     
-    move $s4, $s1
-    subi $s3, $s0, 1
-    
-    j end_unstack
+    j end_restore_ra
 
 rotate_nine_to_twelve:
-    # Save $ra
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
-
-    # End if block is at bottom border
-    lw $t0, MIN_Y
-    ble $s1, $t0, end_unstack
+    SAVE_RA()
     
-    # End if block collides with other block
     li $a0, 0
     li $a1, -1
-    move $a2, $s0
-    move $a3, $s1
-    jal get_collision
-    beq $v0, 1, end_unstack
+    jal rotate_block
     
-    move $s3, $s0
-    subi $s4, $s1, 1
-    
-    j end_unstack
+    j end_restore_ra
 
 rotate_twelve_to_three:
-    # Save $ra
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
-
-    # End if block is at bottom border
-    lw $t0, MAX_X
-    bge $s0, $t0, end_unstack
+    SAVE_RA()
     
-    # End if block collides with other block
     li $a0, 1
     li $a1, 0
+    jal rotate_block
+    
+    j end_restore_ra
+
+rotate_block:
+    # Half #2 of block: $a0 = 1 if going right, $a0 = -1 if going left, $a1 = 1 if going down, $a1 = -1 if going up
+    # $v0 = 0 if not rotated, $v0 = 1 if rotated
+
+    # Save $ra, $a0, $a1
+    sub $sp, $sp, 12
+    sw $ra, 0($sp)
+    sw $a0, 4($sp)
+    sw $a1, 8($sp)
+
+    # Rotate if block doesn't collide
     move $a2, $s0
     move $a3, $s1
-    jal get_collision
-    beq $v0, 1, end_unstack
+    jal get_pixel_collision
+    beq $v0, 0, do_rotate_block
+    li $v0, 0
+    j end_rotate_block
     
-    move $s4, $s1
-    addi $s3, $s0, 1
+    do_rotate_block:
+        # Restore $a0, $a1
+        lw $a0, 4($sp)
+        lw $a1, 8($sp)
+        
+        # Rotate half #2
+        add $s3, $s0, $a0
+        add $s4, $s1, $a1
+        
+        li $v0, 1
     
-    j end_unstack
+    end_rotate_block:
+    
+    # Restore $ra
+    lw $ra, 0($sp)
+    addi $sp, $sp, 12
+    jr $ra
+    
 
 move_left:
-    # Save $ra
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
-
-    # End if block is at left border
-    lw $t0, MIN_X
-    ble $s0, $t0, end_unstack
-    ble $s3, $t0, end_unstack
+    SAVE_RA()
     
-    # End if block collides with other block
     li $a0, -1
     li $a1, 0
-    jal get_block_collision
-    beq $v0, 1, end_unstack
+    jal move_block
     
-    # Move 1 step left
-    subi $s0, $s0, 1
-    subi $s3, $s3, 1
-    
-    j end_unstack
+    j end_restore_ra
 
 move_down:
-    # Save $ra
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
+    SAVE_RA()
     
-    # Place if block is at bottom border
-    lw $t0, MAX_Y
-    bge $s1, $t0, place_down_block
-    bge $s4, $t0, place_down_block
-    
-    # Place if block collides with other block
     li $a0, 0
     li $a1, 1
-    jal get_block_collision
-    beq $v0, 1, place_down_block 
-    
-    # Move 1 step down
-    addi $s1, $s1, 1
-    addi $s4, $s4, 1
-    j end_unstack
+    jal move_block
+    # Place if block doesn't move
+    beq $v0, 0, place_down_block
+    j end_restore_ra
     
     place_down_block:
-    jal update_block
-    jal generate_block
-    
-    j end_unstack
+        jal update_block
+        jal generate_block
+        
+        j end_restore_ra
 
 move_right:
-    # Save $ra
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
+    SAVE_RA()
     
-    # End of block is at right border
-    lw $t0, MAX_X
-    bge $s0, $t0, end_unstack
-    bge $s3, $t0, end_unstack
-    
-    # End if block collides with other block
     li $a0, 1
     li $a1, 0
-    jal get_block_collision
-    beq $v0, 1, end_unstack
+    jal move_block
     
-    # Move 1 step right
-    addi $s0, $s0, 1
-    addi $s3, $s3, 1
-    
-    j end_unstack
+    j end_restore_ra
 
-get_collision:
-    # $a0 = 1 if going right, $a0 = -1 if going left, $a1 = 1 if going down, rest are 0
-    # $a2 = $s0 or $s3, $a3 = $s1 or $s4
-    # $v0 = 0 if no collision, $v1 = 1 if collision
-    
-    # Save $ra
-    sub $sp, $sp, 4
+move_block:
+    # $a0 = 1 if going right, $a0 = -1 if going left, $a1 = 1 if going down
+    # $v0 = 0 if not moved, $v0 = 1 if moved
+
+    # Save $ra, $a0, $a1
+    sub $sp, $sp, 12
     sw $ra, 0($sp)
+    sw $a0, 4($sp)
+    sw $a1, 8($sp)
     
-    # Half of block collision
-    add $t0, $a2, $a0
-    add $t1, $a3, $a1
-    move $a0, $t0
-    move $a1, $t1
-    jal get_pixel
-    lw $t0, BACKGROUND_COLOR
-    bne $v0, $t0, has_collision
-    j end_unstack
+    # Move if block doesn't collide
+    jal get_block_collision
+    beq $v0, 0, do_move_block
+    li $v0, 0
+    j end_move_block
     
-    has_collision:
+    do_move_block:
+        # Restore $a0, $a1
+        lw $a0, 4($sp)
+        lw $a1, 8($sp)
+        
+        # Move block
+        add $s0, $s0, $a0
+        add $s1, $s1, $a1
+        add $s3, $s3, $a0
+        add $s4, $s4, $a1
+        
         li $v0, 1
-        j end_unstack
+    
+    end_move_block:
+    
+    # Restore $ra
+    lw $ra, 0($sp)
+    addi $sp, $sp, 12
+    jr $ra
+    
+    
+
+##############################################################################
+# COLLISION DETECTION
+##############################################################################
+    
+pixel_in_border:               # Not factoring in movement
+    # $a0 = x-coordinate, $a1 = y-coordinate
+    # $v0 = 0 if no collision, $v0 = 1 if collision
+    
+    # Collision with at top border
+    lw $t0, MIN_Y
+    blt $a1, $t0, had_pixel_in_border
+    
+    # Collision with left border
+    lw $t0, MIN_X
+    blt $a0, $t0, had_pixel_in_border
+    
+    # Collision with bottom border
+    lw $t0, MAX_Y
+    bgt $a1, $t0, had_pixel_in_border
+    
+    # Collision with right border
+    lw $t0, MAX_X
+    bgt $a0, $t0, had_pixel_in_border
     
     li $v0, 0
+    j end
     
-    j end_unstack
+    had_pixel_in_border:
+        li $v0, 1
+        j end
+    
 
-get_block_collision:
-    # $a0 = 1 if going right, $a0 = -1 if going left, $a1 = 1 if going down, rest are 0
-    # $v0 = 0 if no collision, $v1 = 1 if collision
+get_pixel_collision:                # Factors in movement
+    # $a0 = 1 if going right, $a0 = -1 if going left, $a1 = 1 if going down
+    # $a2 = $s0 or $s3, $a3 = $s1 or $s4
+    # $v0 = 0 if no collision, $v0 = 1 if collision
     
-    # Save $ra, $a0, $a1 (reserve space for $ra, $a0, and $a1, total 12 bytes)
+    SAVE_RA()
+    
+    # Half of block collision
+    add $a0, $a2, $a0
+    add $a1, $a3, $a1
+    jal pixel_in_border
+    beq $v0, 1, has_pixel_collision
+    jal get_pixel
+    lw $t0, BACKGROUND_COLOR
+    bne $v0, $t0, has_pixel_collision
+    
+    li $v0, 0
+    j end_restore_ra
+    
+    has_pixel_collision:
+        li $v0, 1
+        j end_restore_ra
+
+get_block_collision:            # Factors in movement
+    # $a0 = 1 if going right, $a0 = -1 if going left, $a1 = 1 if going down
+    # $v0 = 0 if no collision, $v0 = 1 if collision
+    
+    # Save $ra, $a0, $a1
     sub $sp, $sp, 12
-    sw $ra, 0($sp)    # Save return address
-    sw $a0, 4($sp)    # Save $a0
-    sw $a1, 8($sp)    # Save $a1
+    sw $ra, 0($sp)
+    sw $a0, 4($sp)
+    sw $a1, 8($sp)
     
     # Half #1
     move $a2, $s0
     move $a3, $s1
-    jal get_collision
+    jal get_pixel_collision
     beq $v0, 1, has_block_collision
     
     # Restore $a0, $a1
@@ -528,31 +526,34 @@ get_block_collision:
     # Half #2
     move $a2, $s3
     move $a3, $s4
-    jal get_collision
+    jal get_pixel_collision
     beq $v0, 1, has_block_collision
+    
+    li $v0, 0
     j end_get_block_collision
     
     has_block_collision:
         li $v0, 1
         j end_get_block_collision
     
-    li $v0, 0
-    
     end_get_block_collision:
     
     # Restore $ra
     lw $ra, 0($sp)
-    addi $sp, $sp, 12      # Adjust stack pointer back
+    addi $sp, $sp, 12
     jr $ra
 
 ##############################################################################
 # TIMER
 ##############################################################################
 
+reset_timer:
+    li $s6, 0
+    
+    jr $ra
+
 increment_timer:
-    # Save $ra
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
+    SAVE_RA()
     
     lw $t0, FRAMERATE
     addi $s6, $s6, 1
@@ -562,22 +563,16 @@ increment_timer:
     
     after_tick_timer:
     
-    # Restore $ra
-    lw $ra, 0($sp)
-    addi $sp, $sp, 4
+    RESTORE_RA()
     jr $ra
 
 tick_timer:
-    # Save $ra
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
+    SAVE_RA()
     
-    li $s6, 0
+    jal reset_timer
     jal move_down
     
-    # Restore $ra
-    lw $ra, 0($sp)
-    addi $sp, $sp, 4
+    RESTORE_RA()
     jr $ra
 
 
@@ -589,8 +584,7 @@ set_pixel:
     # $a0 = x-coordinate, $a1 = y-coordinate, $a2 = color
     
     # Save $ra before calling coord_to_idx
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
+    SAVE_RA()
     
     jal coord_to_idx
     
@@ -598,8 +592,7 @@ set_pixel:
     sw $a2, 0($t0)          # Store the value of $a2 at the address in $t0
     
     # Restore $ra after returning from coord_to_idx
-    lw $ra, 0($sp)
-    addi $sp, $sp, 4
+    RESTORE_RA()
     jr $ra
 
 get_pixel:
@@ -607,8 +600,7 @@ get_pixel:
     # $v0 = color of the pixel at the x and y-coordinates
     
     # Save $ra before calling coord_to_idx
-    sub $sp, $sp, 4
-    sw $ra, 0($sp)
+    SAVE_RA()
     
     jal coord_to_idx
     
@@ -616,8 +608,7 @@ get_pixel:
     lw $v0, 0($t0)          # Load the value at the grid index into $v0
     
     # Restore $ra after returning from coord_to_idx
-    lw $ra, 0($sp)
-    addi $sp, $sp, 4
+    RESTORE_RA()
     jr $ra
 
 coord_to_idx:   # Converts x and y-coordinates to the corresponding memory index in the grid
