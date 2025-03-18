@@ -427,7 +427,7 @@ move_down:
     
     place_down_block:
         jal update_block
-        jal simulate_clearing
+        jal simulate_grid
         jal generate_block
         
         j end_restore_ra
@@ -822,8 +822,7 @@ get_linked_cell:
     lw $t1, CELL_SIZE
     sw $t1, 16($sp)             # Save the cell's size
     
-    # $t3 = x-offset to border, $t4 = y-offset to border
-    # $t5 = x-offset to next cell, $t6 = y-offset to next cell
+    # $t2 = x-offset to next cell, $t3 = y-offset to next cell
     
     # add $a0, $a0, $t1
     add $t2, $zero, $t1
@@ -881,10 +880,10 @@ get_linked_cell:
     
     
 ##############################################################################
-# CELL CLEARING
+# GRID SIMULATION
 ##############################################################################
 
-simulate_clearing:
+simulate_grid:
     SAVE_RA()
     
     jal clear_lines
