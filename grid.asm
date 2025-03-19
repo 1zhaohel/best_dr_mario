@@ -4,6 +4,7 @@ ADDR_DSPL:
 ADDR_KBRD:
     .word 0xffff0000
 
+# Grid and sizes
 GRID:
     .space 14400 # 60 * 60 * 4
 GRID_SIZE:
@@ -19,19 +20,23 @@ CELL_SIZE:
 CLEAR_LENGTH:
     .word 4
 
+# Framerate and timing
 FRAMERATE:
     .word 180
+ANIMATION_MULTIPLIER:
+    .word 3
 
-# Border within the jar, inclusive
+# Area in jar within border, inclusive
 MIN_X:
-    .word 0
+    .word 3
 MAX_X:
-    .word 59
+    .word 56
 MIN_Y:
-    .word 0
+    .word 3
 MAX_Y:
-    .word 59
-    
+    .word 56
+
+# Colors
 RED_COLOR:
     .word 0xFF79C6
 YELLOW_COLOR:
@@ -45,7 +50,7 @@ BACKGROUND_COLOR:
     .text
 	.globl main
 
-# Macro Definitions
+# Macro definitions
     .macro SAVE_RA()
         sub $sp, $sp, 4
         sw $ra, 0($sp)
@@ -62,9 +67,34 @@ BACKGROUND_COLOR:
 ##############################################################################
 
 main:
+    # Initialize grid and start the game loop.
+    
     jal generate_block
     jal reset_timer
     jal initialize_grid
+    
+    # TODO: REMOVE ONCE BORDER IS DRAWN
+    # li $a0, 58
+    # li $a1, 55
+    # li $a2, 0x50FA7B
+    # li $a3, 0
+    # jal set_cell
+    # li $a0, 55
+    # li $a1, 58
+    # li $a2, 0x50FA7B
+    # li $a3, 0
+    # jal set_cell
+    # li $a0, 1
+    # li $a1, 55
+    # li $a2, 0x50FA7B
+    # li $a3, 0
+    # jal set_cell
+    # li $a0, 4
+    # li $a1, 58
+    # li $a2, 0x50FA7B
+    # li $a3, 0
+    # jal set_cell
+    
     jal draw_grid
     
     j game_loop
@@ -81,6 +111,9 @@ end_restore_ra:
     jr $ra
 
 initialize_grid:
+    # Initialize the grid by setting the color of all pixels to be the 
+    # predefined BACKGROUND_COLOR.
+
     la $t0, GRID            # Load grid address ($t0) into counter
     lw $t1, GRID_SIZE       # Lood grid size ($t1)
     add $t1, $t1, $t0       # Specify max index ($t1)
@@ -93,6 +126,8 @@ initialize_grid:
         j while_initialize_grid
 
 draw_grid:
+    # Loop through each pixel in the grid and draw them to the display.
+    
     la $t0, GRID            # Load grid address ($t0) into counter
     lw $t1, GRID_SIZE       # Lood grid size ($t1)
     add $t1, $t1, $t0       # Specify max index ($t1)
@@ -107,6 +142,9 @@ draw_grid:
         j while_draw_grid
 
 generate_block:
+    # Generate a new 2x1 cell block at the middle top of the screen, 
+    # with random colors the cells in each half.
+
     # Save $ra (in main after generate_block) and restore after random_color
     SAVE_RA()
     
@@ -137,6 +175,11 @@ generate_block:
     jr $ra
 
 random_color:
+    # Generate a random color from RED_COLOR, YELLOW_COLOR, or 
+    # BLUE_COLOR.
+    # Returns:
+    #   $v0: Randomly generated color
+
     # Generate random number from (0, 1, 2)
     li $v0, 42
     li $a0, 0
@@ -163,6 +206,9 @@ random_color:
 # GAME LOOP
 ##############################################################################
 game_loop:
+    # Game loop that repeatedly loops until the user quits or the game
+    # ends.
+    
     jal clear_block
     jal keyboard_input
     jal increment_timer
@@ -176,6 +222,15 @@ game_loop:
 ##############################################################################
 
 update_block:
+    # Draw the block at the its currently set location.
+    # Args:
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s2: color of half #1 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+    #   $s5: color of half #2 of the block
+    
     SAVE_RA()
 
     # Draw new pixel position
@@ -186,6 +241,13 @@ update_block:
     jr $ra
 
 clear_block:
+    # Clear the block from its currently set location.
+    # Args:
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+
     # Save $ra (in game_loop after clear_block) before draw_block
     SAVE_RA()
     
@@ -198,7 +260,15 @@ clear_block:
     jr $ra
 
 draw_block:
-    # $a0 = 0 to clear, otherwise draw
+    # Draw or clear the block at the its currently set location.
+    # Args:
+    #   $a0: 0 to clear or 1 to draw the block
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s2: color of half #1 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+    #   $s5: color of half #2 of the block
     
     move $t0, $a0
     
@@ -255,6 +325,9 @@ draw_block:
 ##############################################################################
 
 keyboard_input:
+    # Attempt to read an inputted character from the bitmap without
+    # blocking.
+
     # Save $ra (in main after keyboard_input)
     SAVE_RA()
     
@@ -273,7 +346,10 @@ keyboard_input:
     jr $ra
 
 handle_input:
-    # $a0 = full keyboard input
+    # Move, rotate, quit, or otherwise do nothing based on the 
+    # inputted character.
+    # Args:
+    #   $a0: full keyboard input
     
     lw $a0, 4($a0)                  # Load second word from keyboard
     
@@ -299,10 +375,20 @@ handle_input:
     j after_handle_input
 
 end_game:
+    # Quit the game and end the program.
+    
 	li $v0, 10                      # Quit gracefully
 	syscall
 
 rotate:
+    # Attempt to rotate the block based on its current
+    # orientation.
+    # Args:
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+    
     SAVE_RA()
     
     jal get_block_orientation
@@ -327,6 +413,14 @@ rotate:
     jr $ra
 
 rotate_three_to_six:
+    # Attempt to rotate the block from being angled to the right to 
+    # being angled downwards.
+    # Args:
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+    
     SAVE_RA()
 
     lw $t0, CELL_SIZE
@@ -337,6 +431,14 @@ rotate_three_to_six:
     j end_restore_ra
 
 rotate_six_to_nine:
+    # Attempt to rotate the block from being angled to downards to 
+    # being angled to the left.
+    # Args:
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+
     SAVE_RA()
     
     lw $t0, CELL_SIZE
@@ -347,6 +449,14 @@ rotate_six_to_nine:
     j end_restore_ra
 
 rotate_nine_to_twelve:
+    # Attempt to rotate the block from being angled to to the left to 
+    # being angled upwards.
+    # Args:
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+
     SAVE_RA()
     
     lw $t0, CELL_SIZE
@@ -357,6 +467,14 @@ rotate_nine_to_twelve:
     j end_restore_ra
 
 rotate_twelve_to_three:
+    # Attempt to rotate the block from being angled upwards to 
+    # being angled to the right.
+    # Args:
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+    
     SAVE_RA()
     
     lw $t0, CELL_SIZE
@@ -367,8 +485,21 @@ rotate_twelve_to_three:
     j end_restore_ra
 
 rotate_block:
-    # Half #2 of block: $a0 = 1*CELL_SIZE if going right, $a0 = -1*CELL_SIZE if going left, $a1 = 1*CELL_SIZE if going down, $a1 = -1*CELL_SIZE if going up
-    # $v0 = 0 if not rotated, $v0 = 1 if rotated
+    # Attempt to rotate half #2 of the block based on the arguments
+    # that specify where the cell should be moved to. This will not
+    # rotate the block if it would cause a collision with filled
+    # space or the border.
+    # Args:
+    #   $a0: CELL_SIZE to rotate right, -CELL_SIZE to rotate left, 
+    #       0 otherwise
+    #   $a1: CELL_SIZE to rotate down, -CELL_SIZE to rotate up, 
+    #       0 otherwise
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+    # Returns:
+    #   $v0: 0 if not rotated, 1 if successfully rotated
 
     # Save $ra, $a0, $a1
     sub $sp, $sp, 12
@@ -404,6 +535,13 @@ rotate_block:
     
 
 move_left:
+    # Attempt to move the block to the left.
+    # Args:
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+    
     SAVE_RA()
     
     lw $t0, CELL_SIZE
@@ -414,6 +552,14 @@ move_left:
     j end_restore_ra
 
 move_down:
+    # Attempt to move the block to down, and place it on a succesful
+    # movement.
+    # Args:
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+
     SAVE_RA()
     
     lw $t0, CELL_SIZE
@@ -433,6 +579,13 @@ move_down:
         j end_restore_ra
 
 move_right:
+    # Attempt to move the block to the right.
+    # Args:
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+
     SAVE_RA()
     
     lw $t0, CELL_SIZE
@@ -443,8 +596,20 @@ move_right:
     j end_restore_ra
 
 move_block:
-    # $a0 = 1*CELL_SIZE if going right, $a0 = -1*CELL_SIZE if going left, $a1 = 1*CELL_SIZE if going down
-    # $v0 = 0 if not moved, $v0 = 1 if moved
+    # Attempt to move the block based on the arguments that specify
+    # where the block should be moved. This will not move the block if 
+    # it would cause a collision with filled space or the border.
+    # Args:
+    #   $a0: CELL_SIZE if going right, -CELL_SIZE if going left, 
+    #       0 otherwise
+    #   $a1: CELL_SIZE if going down, -CELL_SIZE if going up, 
+    #       0 otherwise
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+    # Returns:
+    #   $v0: 0 if not moved, 1 if successfully moved
 
     # Save $ra, $a0, $a1
     sub $sp, $sp, 12
@@ -484,9 +649,14 @@ move_block:
 # COLLISION DETECTION
 ##############################################################################
     
-pixel_in_border:               # Not factoring in movement
-    # $a0 = x-coordinate, $a1 = y-coordinate
-    # $v0 = 0 if no collision, $v0 = 1 if collision
+pixel_in_border:
+    # Check whether the specified coordinates is outside or in the
+    # borders or not, without factoring in any movement.
+    # Args:
+    #   $a0: x-coordinate of pixel
+    #   $a1 = y-coordinate of pixel
+    # Returns:
+    #   $v0: 0 if no collision, 1 if collision with border
     
     # Collision with at top border
     lw $t0, MIN_Y
@@ -512,14 +682,26 @@ pixel_in_border:               # Not factoring in movement
         j end
     
 
-get_cell_collision:                # Factors in movement
-    # $a0 = 1 if going right, $a0 = -1 if going left, $a1 = 1 if going down
-    # $a2 = $s0 or $s3, $a3 = $s1 or $s4
-    # $v0 = 0 if no collision, $v0 = 1 if collision
+get_cell_collision:
+    # Checks whether the specified cell coordinates will have a
+    # collision with the border or a filled space, based on the 
+    # specified movement.
+    # Args:
+    #   $a0: CELL_SIZE if going right, -CELL_SIZE if going left, 
+    #       0 otherwise
+    #   $a1: CELL_SIZE if going down, -CELL_SIZE if going up, 
+    #       0 otherwise
+    #   $a2: x-coordinate of cell
+    #   $a3: y-coordinate of cell
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+    # Returns:
+    #   $v0 = 0 if no collision, $v0 = 1 if collision
     
     SAVE_RA()
     
-    # Half of block collision
     add $a0, $a2, $a0
     add $a1, $a3, $a1
     jal pixel_in_border
@@ -535,9 +717,18 @@ get_cell_collision:                # Factors in movement
         li $v0, 1
         j end_restore_ra
 
-get_block_collision:            # Factors in movement
-    # $a0 = 1 if going right, $a0 = -1 if going left, $a1 = 1 if going down
-    # $v0 = 0 if no collision, $v0 = 1 if collision
+get_block_collision:
+    # Checks whether the block will have a collision with the border
+    # or a filled space, based on the specified movement.
+    # Args:
+    #   $a0: CELL_SIZE if going right, -CELL_SIZE if going left, 
+    #       0 otherwise
+    #   $a1: CELL_SIZE if going down, -CELL_SIZE if going up, 
+    #       0 otherwise
+    #   $a2: x-coordinate of cell
+    #   $a3: y-coordinate of cell
+    # Returns:
+    #   $v0 = 0 if no collision, $v0 = 1 if collision
     
     # Save $ra, $a0, $a1
     sub $sp, $sp, 12
@@ -580,11 +771,18 @@ get_block_collision:            # Factors in movement
 ##############################################################################
 
 reset_timer:
+    # Reset the timer back to 0.
+    
     li $s6, 0
     
     jr $ra
 
 increment_timer:
+    # Increments the timer by 1, and tick it if it reaches the
+    # maximum.
+    # Args:
+    #   $s6: timer
+
     SAVE_RA()
     
     lw $t0, FRAMERATE
@@ -599,6 +797,8 @@ increment_timer:
     jr $ra
 
 tick_timer:
+    # Move the block down and reset the timer finishes a cycle.
+    
     SAVE_RA()
     
     jal reset_timer
@@ -607,14 +807,40 @@ tick_timer:
     RESTORE_RA()
     jr $ra
 
+pause_tick:
+    # Pause the game until the timer completes a full cycle, depending
+    # on the ANIMATION_MULTIPLIER, and redraw the grid after the tick. 
+    SAVE_RA()
+    
+    jal reset_timer
+    while_pause_tick:
+        lw $t0, FRAMERATE
+        lw $t1, ANIMATION_MULTIPLIER
+        mult $t0, $t0, $t1
+        beq $s6, $t0, end_pause_tick
+        addi $s6, $s6, 1
+        jal draw_grid
+        j while_pause_tick
+    
+    end_pause_tick:
+    jal reset_timer
+    RESTORE_RA()
+    jr $ra
+    
 
 ##############################################################################
 # GRID GETTER/SETTER
 ##############################################################################
 
 set_cell:
-    # $a0 = x-coordinate, $a1 = y-coordinate, $a2 = color
-    # $a3 = 0 if all borders, $a3 = 3 if no right border, $a3 = 6 if no bottom border, $a3 = 9 if no left border, $a3 = 12 if no top border
+    # Draw the cell with the at the specified coordinates, with the 
+    # specified color, and orientation, depending on the CELL_SIZE.
+    # Args:
+    #   $a0: x-coordinate of the cell
+    #   $a1: y-coordinate of the cell
+    #   $a2: color of the cell
+    #   $a3: 0 for all borders, 3 for no right border, 6 for no bottom
+    #       border, 9 for no left border, 12 for no top border
     
     # Calculate half of cell size
     lw $t6, CELL_SIZE
@@ -697,8 +923,12 @@ set_cell:
     jr $ra
 
 get_pixel:
-    # $a0 = x-coordinate, $a1 = y-coordinate
-    # $v0 = color of the pixel at the x and y-coordinates
+    # Get the pixel at the specified coordinates in the grid.
+    # Args:
+    #   $a0: x-coordinate of the pixel
+    #   $a1: y-coordinate of the pixel
+    # Returns:
+    #   $v0: color of the pixel
     
     # Save $ra before calling coord_to_idx
     SAVE_RA()
@@ -712,7 +942,11 @@ get_pixel:
     jr $ra
 
 set_pixel:
-    # $a0 = x-coordinate, $a1 = y-coordinate, $a2 = color
+    # Set the pixel at the specified coordinates in the grid.
+    # Args:
+    #   $a0: x-coordinate of the pixel
+    #   $a1: y-coordinate of the pixel
+    #   $a2: color of the pixel
     
     # Save $ra before calling coord_to_idx
     SAVE_RA()
@@ -725,9 +959,14 @@ set_pixel:
     RESTORE_RA()
     jr $ra
 
-get_cell:                  # Gets top left pixel
-    # $a0 = x-coordinate, $a1 = y-coordinate
-    # $v0 = color of the cell at the x and y-coordinates
+get_cell:
+    # Return the color of the cell with the at the specified 
+    # coordinates, using the color of the top-left corner of the cell.
+    # Args:
+    #   $a0: x-coordinate of the cell
+    #   $a1: y-coordinate of the cell
+    # Returns:
+    #   $v0: color of the cell
     
     # Save $ra before calling coord_to_idx
     SAVE_RA()
@@ -743,9 +982,14 @@ get_cell:                  # Gets top left pixel
     RESTORE_RA()
     jr $ra
 
-coord_to_idx:   # Converts x and y-coordinates to the corresponding memory index in the grid
-    # $a0 = x-coordinate, $a1 = y-coordinate
-    # $v0 = index in display or grid
+coord_to_idx:
+    # Convert the specified coordinates into the correspnding memory
+    # index in the grid. 
+    # Args:
+    #   $a0: x-coordinate of the cell
+    #   $a1: y-coordinate of the cell
+    # Returns:
+    #   $v0: corresponding index in the grid
     
     la $t0, GRID       # Load base address for the grid ($t0)
     
@@ -765,7 +1009,18 @@ coord_to_idx:   # Converts x and y-coordinates to the corresponding memory index
     jr $ra      
 
 get_block_orientation:
-    # $v0 = orientation of half #1, $v1 = orientation of half #2
+    # Return the orientation of both halves of the block, depending on
+    # their locations.
+    # Args:
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+    # Returns:
+    #   $v0: orientation of half #1
+    #   $v1: orientation of half #2
+    #   The orientation is 3 if facing right, 6 if facing down, 
+    #       9 if facing down, 12 if facing up, and 0 otherwise
     
     lw $t2, CELL_SIZE
     
@@ -804,11 +1059,62 @@ get_block_orientation:
     jr $ra
 
 get_linked_cell:
-    # $a0 = x-coordinate of cell, $a1 = y-coordinate of cell
-    # $v0 = x-coordinate of linked cell, $v1 = y-coordinate of linked cell
+    # Return the coordinates of the linked cell, or return the same
+    # coordinates that were specified of there is no linked cell, 
+    # based on the orientation of cell at the specified coordinates.
+    # Args:
+    #   $a0: x-coordinate of the cell
+    #   $a1: y-coordinate of the cell
+    # Returns:
+    #   $v0: x-coordinate of the linked cell
+    #   $v1: y-coordinate of the linked cell
+    
+    SAVE_RA()
+    
+    jal get_cell_orientation
+    lw $t0, CELL_SIZE
+    
+    bne $v0, 3, skip_right_cell_orientation
+    add $v0, $a0, $t0
+    add $v1, $a1, 0
+    j end_restore_ra
+    skip_right_cell_orientation:
+    
+    bne $v0, 6, skip_down_cell_orientation
+    add $v0, $a0, 0
+    add $v1, $a1, $t0
+    j end_restore_ra
+    skip_down_cell_orientation:
+    
+    bne $v0, 9, skip_left_cell_orientation
+    sub $v0, $a0, $t0
+    add $v1, $a1, 0
+    j end_restore_ra
+    skip_left_cell_orientation:
+    
+    bne $v0, 12, skip_bottom_cell_orientation
+    add $v0, $a0, 0
+    sub $v1, $a1, $t0
+    j end_restore_ra
+    skip_bottom_cell_orientation:
+    
+    move $v0, $a0
+    move $v1, $a1
+    j end_restore_ra
+
+get_cell_orientation:
+    # Return the orientation of the cell based on which direction it
+    # is facing.
+    # Args:
+    #   $a0: x-coordinate of the cell
+    #   $a1: y-coordinate of the cell
+    # Returns:
+    #   $v0: orientation of the cell
+    #   The orientation is 3 if facing right, 6 if facing down, 
+    #       9 if facing down, 12 if facing up, and 0 otherwise
     
     # Save $ra, $a0, $a1
-    sub $sp, $sp, 32
+    sub $sp, $sp, 36
     sw $ra, 0($sp)
     sw $a0, 4($sp)
     sw $a1, 8($sp)
@@ -820,41 +1126,47 @@ get_linked_cell:
     sw $t0, 12($sp)             # Save the cell's color
     
     lw $t1, CELL_SIZE
-    sw $t1, 16($sp)             # Save the cell's size
+    div $t1, $t1, 2
+    sw $t1, 16($sp)             # Save half the cell's size
     
-    # $t2 = x-offset to next cell, $t3 = y-offset to next cell
+    # $t2 = x-offset to border, $t3 = y-offset to next border
+    # $t4 = associated return value
     
-    # add $a0, $a0, $t1
+    # Right oriented
     add $t2, $zero, $t1
     add $t3, $zero, $zero
-    jal check_linked_cell
+    li $t4, 3
+    jal check_cell_orientation
     
-    # add $a1, $a1, $t1
+    # Down oriented
     add $t2, $zero, $zero
     add $t3, $zero, $t1
-    jal check_linked_cell
+    li $t4, 6
+    jal check_cell_orientation
     
-    # sub $a0, $a0, $t1
+    # Left oriented
     sub $t2, $zero, $t1
     add $t3, $zero, $zero
-    jal check_linked_cell
+    li $t4, 9
+    jal check_cell_orientation
     
-    # sub $a1, $a1, $t1
+    # Up oriented
     add $t2, $zero, $zero
     sub $t3, $zero, $t1
-    jal check_linked_cell
+    li $t4, 12
+    jal check_cell_orientation
     
-    j after_get_linked_cell
+    li $v0, 0
+    j after_get_cell_orientation
     
-    check_linked_cell:
+    check_cell_orientation:
         sw $ra, 20($sp)
         sw $t2, 24($sp)
         sw $t3, 28($sp)
+        sw $t4, 32($sp)
         
-        div $t4, $t2, 2
-        div $t5, $t3, 2
-        add $a0, $a0, $t4
-        add $a1, $a1, $t5
+        add $a0, $a0, $t2
+        add $a1, $a1, $t3
         jal get_pixel
         lw $a0, 4($sp)
         lw $a1, 8($sp)
@@ -862,20 +1174,21 @@ get_linked_cell:
         lw $t1, 16($sp)
         lw $t2, 24($sp)
         lw $t3, 28($sp)
-        beq $v0, $t0, after_check_linked_cell
-        add $v0, $a0, $t2
-        add $v1, $a1, $t3
-        j after_get_linked_cell
+        lw $t4, 32($sp)
+        # If border pixel's color is not equal to the rest of the cell, this is its orientation
+        beq $v0, $t0, after_check_cell_orientation
+        move $v0, $t4
+        j after_get_cell_orientation
         
-        after_check_linked_cell:
+        after_check_cell_orientation:
         lw $ra, 20($sp)
         jr $ra
     
-    after_get_linked_cell:
+    after_get_cell_orientation:
     
     # Restore $ra
     lw $ra, 0($sp)
-    addi $sp, $sp, 32
+    addi $sp, $sp, 36
     jr $ra
     
     
@@ -884,50 +1197,88 @@ get_linked_cell:
 ##############################################################################
 
 simulate_grid:
+    # Simulate the grid's reaction once a block is placed down, 
+    # clearing cells and simulating cell falling until no more
+    # cells need to be cleared.
+    
     SAVE_RA()
     
-    jal clear_lines
+    while_simulate_grid:
+        jal clear_lines
+        beq $v0, 0, end_simulate_grid
+        jal pause_tick
+        jal fall_blocks
+        j while_simulate_grid
+    
+    end_simulate_grid:
     
     RESTORE_RA()
     jr $ra
 
+##############################################################################
+# CLEARING LINES
+##############################################################################
+
 clear_lines:
-    SAVE_RA()
+    # Unlink, then clear all the cells that form a line of length
+    # equal or longer than CLEAR_LENGTH along a row or column, and
+    # return the total number of cells cleared from both clearing both
+    # rows and columns.
+    # Returns:
+    #   $v0 = number of blocks cleared from both rows and columns
+    
+    sub $sp, $sp, 8
+    sw $ra, 0($sp)
     
     # Clear rows
     li $a0, 0
     jal clear_loop
     
+    sw $v0, 4($sp)
+    
     # Clear columns
     li $a0, 1
     jal clear_loop
     
-    RESTORE_RA()
+    lw $t0, 4($sp)
+    add $v0, $v0, $t0
+    
+    lw $ra, 0($sp)
+    addi $sp, $sp, 8
     jr $ra
 
 clear_loop:
-    # $a0 = 0 to clear row lines, $a0 = 1 to clear column lines
+    # Unlink, then clear all cells that form a line of length
+    # equal or longer than CLEAR_LENGTH along rows or columns,
+    # depending on the specified input, and return the number
+    # of cells cleared.
+    # Args:
+    #   $a0: 0 to clear row lines, 1 to clear column lines
+    # Returns:
+    #   $v0 = number of blocks cleared from rows or from columns
 
     SAVE_RA()
     
     lw $t2, CELL_SIZE           # Specify stride length ($t2) for the index
-    lw $t0, DISPLAY_WIDTH
-    sub $t0, $t0, $t2
-    add $t0, $t0, 1
-    lw $t1, DISPLAY_HEIGHT
-    sub $t1, $t1, $t2
-    add $t1, $t1, 1             # Specify index ($t0, $t1) at the center of the last cell in the grid
+    div $t3, $t2, 2
+    lw $t0, MAX_X
+    sub $t0, $t0, $t3
+    lw $t1, MAX_Y
+    sub $t1, $t1, $t3           # Specify index ($t0, $t1) at the center of the last cell within border
     
     li $t3, 0                   # Specify color counter
     lw $t4, BACKGROUND_COLOR    # Specify current color
     
-    sub $sp, $sp, 32
+    li $t6, 0                   # Specify cleared cell counter
+    
+    sub $sp, $sp, 36
     sw $a0, 0($sp)
     sw $t0, 4($sp)
     sw $t1, 8($sp)
     sw $t2, 12($sp)
     sw $t3, 16($sp)
     sw $t4, 20($sp)
+    sw $t6, 32($sp)
     
     while_clear_loop:
         beq $a0, 0, check_end_row_clear_loop
@@ -935,13 +1286,17 @@ clear_loop:
         j after_check_end_clear_loop
         
         check_end_row_clear_loop:
-        blt $t1, 0, end_clear_loop
-        blt $t0, 0, reset_clear_loop
+        lw $t5, MIN_X
+        lw $t6, MIN_Y
+        blt $t1, $t6, end_clear_loop
+        blt $t0, $t5, reset_clear_loop
         j after_check_end_clear_loop
         
         check_end_column_clear_loop:
-        blt $t0, 0, end_clear_loop
-        blt $t1, 0, reset_clear_loop
+        lw $t5, MIN_X
+        lw $t6, MIN_Y
+        blt $t0, $t5, end_clear_loop
+        blt $t1, $t6, reset_clear_loop
         j after_check_end_clear_loop
         
         after_check_end_clear_loop:
@@ -955,6 +1310,7 @@ clear_loop:
         lw $t2, 12($sp)
         lw $t3, 16($sp)
         lw $t4, 20($sp)
+        lw $t6, 32($sp)
         
         lw $t5, BACKGROUND_COLOR
         beq $v0, $t5, reset_clear_color_counter       # Reset color counter if no block at index
@@ -1039,9 +1395,13 @@ clear_loop:
                 lw $t3, 16($sp)
                 lw $t4, 20($sp)
                 lw $t5, 28($sp)
+                lw $t6, 32($sp)
                 
                 sub $t3, $t3, 1
                 sw $t3, 16($sp)
+                
+                add $t6, $t6, 1
+                sw $t6, 32($sp)
                 
                 j while_mark_clear_color
             
@@ -1051,21 +1411,21 @@ clear_loop:
         
         after_clear_color_counter:
         
-        beq $a0, 0, check_row_clear_color_counter
-        beq $a0, 1, check_column_clear_color_counter
-        j after_check_clear_color_counter
+        beq $a0, 0, check_increment_row_clear_counter
+        beq $a0, 1, check_increment_column_clear_counter
+        j after_check_increment_clear_counter
         
-        check_row_clear_color_counter:
+        check_increment_row_clear_counter:
         sub $t0, $t0, $t2
         sw $t0, 4($sp)
-        j after_check_clear_color_counter
+        j after_check_increment_clear_counter
         
-        check_column_clear_color_counter:
+        check_increment_column_clear_counter:
         sub $t1, $t1, $t2
         sw $t1, 8($sp)
-        j after_check_clear_color_counter
+        j after_check_increment_clear_counter
         
-        after_check_clear_color_counter:
+        after_check_increment_clear_counter:
         
         j while_clear_loop
         
@@ -1080,18 +1440,20 @@ clear_loop:
             j after_check_reset_clear_loop
             
             check_reset_row_clear_loop:
-            lw $t0, DISPLAY_WIDTH
+            div $t2, $t2, 2
+            lw $t0, MAX_X
             sub $t0, $t0, $t2
-            add $t0, $t0, 1       
+            lw $t2, 12($sp)
             sw $t0, 4($sp)
             sub $t1, $t1, $t2
             sw $t1, 8($sp)
             j after_check_reset_clear_loop
             
             check_reset_column_clear_loop:
-            lw $t1, DISPLAY_HEIGHT
+            div $t2, $t2, 2
+            lw $t1, MAX_Y
             sub $t1, $t1, $t2
-            add $t1, $t1, 1       
+            lw $t2, 12($sp) 
             sw $t1, 8($sp)
             sub $t0, $t0, $t2
             sw $t0, 4($sp)
@@ -1106,13 +1468,19 @@ clear_loop:
     
     end_clear_loop:
     
-    addi $sp, $sp, 32
+    lw $t6, 32($sp)
+    move $v0, $t6
+    
+    addi $sp, $sp, 36
     
     j end_restore_ra
 
-
 unlink_block:
-    # $a0 = x-coordinate of a block's half's cell, $a1 = y-coordinate of a block's half's cell  
+    # Unlinks both halves of the block at the specified coordinates,
+    # making them each half an individual cell without an orientation.
+    # Args:
+    #   $a0: x-coordinate of the block's half's cell
+    #   $a1: y-coordinate of the block's half's cell  
     
     # Save $ra, $a0, $a1, $t0
     sub $sp, $sp, 12
@@ -1135,7 +1503,11 @@ unlink_block:
     jr $ra
 
 unlink_cell:
-    # $a0 = x-coordinate of cell, $a1 = y-coordinate of cell
+    # Unlinks the cell at the specified coordinates, by redrawing
+    # it without an orientation.
+    # Args:
+    #   $a0: x-coordinate of the cell
+    #   $a1: y-coordinate of the cell
     
     # Save $ra, $a0, $a1, $t0
     sub $sp, $sp, 12
@@ -1149,6 +1521,225 @@ unlink_cell:
     move $a2, $v0
     li $a3, 0
     jal set_cell
+    
+    # Restore $ra
+    lw $ra, 0($sp)
+    addi $sp, $sp, 12
+    jr $ra
+
+##############################################################################
+# FALLING BLOCKS
+##############################################################################
+
+fall_blocks:
+    # Animate the blocks falling until there are no more floating
+    # blocks that can fall, pausing for a tick after each movement.
+    
+    SAVE_RA()
+    
+    li $v0, -1                      # Initialize number of blocks fallen to != 0 so fall_loop runs at least once
+    while_fall_blocks:
+        beq $v0, 0, end_restore_ra
+        
+        la $ra, after_pause_tick
+        bne $v0, -1, pause_tick     # Don't pause on the first check
+        after_pause_tick:
+        
+        jal fall_loop
+        
+        j while_fall_blocks
+
+fall_loop:
+    # Move each cell or block that has an empty space below it down
+    # by CELL_SIZE, starting from the bottom, and return the number
+    # of cells that have moved.
+    # Returns:
+    #   $v0: number of cells that moved down
+
+    SAVE_RA()
+    
+    lw $t2, CELL_SIZE           # Specify stride length ($t2) for the index
+    div $t3, $t2, 2
+    lw $t0, MAX_X
+    sub $t0, $t0, $t3
+    lw $t1, MAX_Y
+    sub $t1, $t1, $t3           # Specify index ($t0, $t1) at the center of the last cell within border
+    
+    li $t3, 0                   # Specify fallen cell counter
+    
+    sub $sp, $sp, 16
+    sw $t0, 0($sp)
+    sw $t1, 4($sp)
+    sw $t2, 8($sp)
+    sw $t3, 12($sp)
+    
+    while_fall_loop:
+        lw $t5, MIN_X
+        lw $t6, MIN_Y
+        blt $t1, $t6, end_fall_loop
+        blt $t0, $t5, reset_fall_loop
+        
+        move $a0, $t0
+        move $a1, $t1
+        jal fall_cell
+        lw $t0, 0($sp)
+        lw $t1, 4($sp)
+        lw $t2, 8($sp)
+        lw $t3, 12($sp)
+        
+        add $t3, $t3, $v0
+        sw $t3, 12($sp)
+        
+        sub $t0, $t0, $t2
+        sw $t0, 0($sp)
+        
+        j while_fall_loop
+        
+        reset_fall_loop:
+            div $t2, $t2, 2
+            lw $t0, MAX_X
+            sub $t0, $t0, $t2
+            lw $t2, 8($sp)
+            sw $t0, 0($sp)
+            sub $t1, $t1, $t2
+            sw $t1, 4($sp)
+            j while_fall_loop
+    
+    end_fall_loop:
+    
+    move $v0, $t3
+    
+    addi $sp, $sp, 16
+    
+    j end_restore_ra
+
+can_fall_cell:
+    # Check whether the cell at the specified coordinates is able
+    # to move down and if there are no collisions with filled
+    # spaces or borders. If there is no cell, return 0.
+    # Args:
+    #   $a0: x-coordinate of the cell
+    #   $a1: y-coordinate of the cell
+    # Returns:
+    #   $v0: 0 if cell cannot move down, 1 if cell can move down
+    
+    # Save $ra, $a0, $a1
+    sub $sp, $sp, 12
+    sw $ra, 0($sp)
+    sw $a0, 4($sp)
+    sw $a1, 8($sp)
+
+    # Ignore cell if background
+    jal get_cell
+    lw $t0, BACKGROUND_COLOR
+    bne $v0, $t0, after_check_can_fall_cell
+    li $v0, 0
+    j end_can_fall_cell
+    
+    after_check_can_fall_cell:
+    lw $a0, 4($sp)
+    lw $a1, 8($sp)
+    
+    # Move if cell doesn't collide
+    move $a2, $a0
+    move $a3, $a1
+    li $a0, 0
+    lw $a1, CELL_SIZE
+    jal get_cell_collision
+    beq $v0, 0, do_can_fall_cell
+    li $v0, 0
+    j end_can_fall_cell
+    
+    do_can_fall_cell:
+    li $v0, 1
+    
+    end_can_fall_cell:
+    
+    # Restore $ra
+    lw $ra, 0($sp)
+    addi $sp, $sp, 12
+    jr $ra
+
+fall_cell:
+    # Attempt to move the cell at the specified coordinates downwards,
+    # and returns whether or not it was successful. If there is no
+    # cell, return 0.
+    # Args:
+    #   $a0: x-coordinate of the cell
+    #   $a1: y-coordinate of the cell
+    # Returns: 
+    #   $v0 = 0 if not moved, $v0 = 1 if moved successfully
+
+    # Save $ra, $a0, $a1
+    sub $sp, $sp, 12
+    sw $ra, 0($sp)
+    sw $a0, 4($sp)
+    sw $a1, 8($sp)
+    
+    # Check if other half of cell can also fall
+    jal get_cell_orientation
+    lw $a0, 4($sp)
+    lw $a1, 8($sp)
+    beq $v0, 3, check_left_can_fall_cell
+    beq $v0, 9, check_right_can_fall_cell
+    j after_check_half_can_fall_cell
+    
+    check_left_can_fall_cell:
+    # Left half can only fall if right half of cell has already fallen
+    lw $t0, CELL_SIZE
+    add $a0, $a0, $t0
+    jal get_cell
+    lw $t1, BACKGROUND_COLOR
+    beq $v0, $t1, do_fall_cell
+    j skip_do_fall_cell
+    
+    check_right_can_fall_cell:
+    # Right half can only fall if both cells can fall
+    jal get_linked_cell
+    move $a0, $v0
+    move $a1, $v1
+    jal can_fall_cell
+    lw $a0, 4($sp)
+    lw $a1, 8($sp)
+    beq $v0, 0, skip_do_fall_cell
+    
+    after_check_half_can_fall_cell:
+    
+    jal can_fall_cell
+    lw $a0, 4($sp)
+    lw $a1, 8($sp)
+    beq $v0, 0, skip_do_fall_cell
+    
+    do_fall_cell:
+        # Get cell color
+        lw $a0, 4($sp)
+        lw $a1, 8($sp)
+        jal get_cell
+        
+        # Draw new cell
+        move $a2, $v0
+        lw $a0, 4($sp)                      # Update to new x and y-coordinates
+        lw $a1, 8($sp)
+        jal get_cell_orientation
+        move $a3, $v0
+        lw $t0, CELL_SIZE
+        add $a1, $a1, $t0
+        jal set_cell
+        
+        # Clear old cell position
+        lw $a0, 4($sp)
+        lw $a1, 8($sp)
+        lw $a2, BACKGROUND_COLOR
+        li $a3, 0
+        jal set_cell
+        
+        li $v0, 1
+        j end_fall_cell
+    
+    skip_do_fall_cell:
+    li $v0, 0
+    
+    end_fall_cell:
     
     # Restore $ra
     lw $ra, 0($sp)
