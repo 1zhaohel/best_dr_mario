@@ -24,7 +24,7 @@ CLEAR_LENGTH:
 FRAMERATE:
     .word 180
 ANIMATION_MULTIPLIER:
-    .word 3
+    .word 2
 
 # Area in jar within border, inclusive
 MIN_X:
@@ -43,6 +43,8 @@ YELLOW_COLOR:
     .word 0xF1FA8C
 BLUE_COLOR:
     .word 0x8BE9FD
+CLEAR_COLOR:
+    .word 0xFFB86C
 BACKGROUND_COLOR:
     .word 0x282A36
 
@@ -352,9 +354,6 @@ handle_input:
     #   $a0: full keyboard input
     
     lw $a0, 4($a0)                  # Load second word from keyboard
-    
-    li $v0, 1                      # Set output
-    syscall                         # Print inputted character ($a0)
     
     la $ra, after_move_block
     
@@ -1206,7 +1205,7 @@ simulate_grid:
     while_simulate_grid:
         jal clear_lines
         beq $v0, 0, end_simulate_grid
-        jal pause_tick
+        # jal pause_tick
         jal fall_blocks
         j while_simulate_grid
     
@@ -1385,6 +1384,17 @@ clear_loop:
                 j after_check_mark_clear_color
                 
                 after_check_mark_clear_color:
+                
+                jal pause_tick
+                # lw $a0, 0($sp)
+                lw $t0, 4($sp)
+                lw $t1, 8($sp)
+                lw $t2, 12($sp)
+                lw $t3, 16($sp)
+                lw $t4, 20($sp)
+                lw $t5, 28($sp)
+                lw $t6, 32($sp)
+                
                 lw $a2, BACKGROUND_COLOR
                 li $a3, 0
                 jal set_cell                        # Clear cell in line
@@ -1402,6 +1412,16 @@ clear_loop:
                 
                 add $t6, $t6, 1
                 sw $t6, 32($sp)
+                
+                jal pause_tick
+                lw $a0, 0($sp)
+                lw $t0, 4($sp)
+                lw $t1, 8($sp)
+                lw $t2, 12($sp)
+                lw $t3, 16($sp)
+                lw $t4, 20($sp)
+                lw $t5, 28($sp)
+                lw $t6, 32($sp)
                 
                 j while_mark_clear_color
             
@@ -1491,10 +1511,12 @@ unlink_block:
     jal get_linked_cell
     move $a0, $v0
     move $a1, $v1
+    li $a2, 0
     jal unlink_cell
     
     lw $a0, 4($sp)
     lw $a1, 8($sp)
+    li $a2, 1
     jal unlink_cell
     
     # Restore $ra
@@ -1508,23 +1530,34 @@ unlink_cell:
     # Args:
     #   $a0: x-coordinate of the cell
     #   $a1: y-coordinate of the cell
+    #   $a2: 0 to unlink with the cell's color, 1 to unlink with CLEAR_COLOR
     
     # Save $ra, $a0, $a1, $t0
-    sub $sp, $sp, 12
+    sub $sp, $sp, 16
     sw $ra, 0($sp)
     sw $a0, 4($sp)
     sw $a1, 8($sp)
+    sw $a2, 12($sp)
     
     jal get_cell
     lw $a0, 4($sp)
     lw $a1, 8($sp)
-    move $a2, $v0
+    lw $a2, 12($sp)
     li $a3, 0
+    beq $a2, 1, clear_color_unlink_cell
+    move $a2, $v0
     jal set_cell
+    j after_unlink_cell
+    
+    clear_color_unlink_cell:
+    lw $a2, CLEAR_COLOR
+    jal set_cell
+    
+    after_unlink_cell:
     
     # Restore $ra
     lw $ra, 0($sp)
-    addi $sp, $sp, 12
+    addi $sp, $sp, 16
     jr $ra
 
 ##############################################################################
