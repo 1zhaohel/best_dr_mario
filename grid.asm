@@ -28,13 +28,19 @@ ANIMATION_MULTIPLIER:
 
 # Area in jar within border, inclusive
 MIN_X:
-    .word 3
+    .word 9
 MAX_X:
-    .word 56
+    .word 50
 MIN_Y:
-    .word 3
+    .word 9
 MAX_Y:
     .word 56
+LID_MIN_X:
+    .word 24
+LID_MAX_X:
+    .word 35
+LID_MIN_Y:
+    .word 3
 
 # Colors
 RED_COLOR:
@@ -43,6 +49,8 @@ YELLOW_COLOR:
     .word 0xF1FA8C
 BLUE_COLOR:
     .word 0x8BE9FD
+JAR_COLOR:
+    .word 0x6272A4
 CLEAR_COLOR:
     .word 0xFFB86C
 BACKGROUND_COLOR:
@@ -74,29 +82,7 @@ main:
     jal generate_block
     jal reset_timer
     jal initialize_grid
-    
-    # TODO: REMOVE ONCE BORDER IS DRAWN
-    # li $a0, 58
-    # li $a1, 55
-    # li $a2, 0x50FA7B
-    # li $a3, 0
-    # jal set_cell
-    # li $a0, 55
-    # li $a1, 58
-    # li $a2, 0x50FA7B
-    # li $a3, 0
-    # jal set_cell
-    # li $a0, 1
-    # li $a1, 55
-    # li $a2, 0x50FA7B
-    # li $a3, 0
-    # jal set_cell
-    # li $a0, 4
-    # li $a1, 58
-    # li $a2, 0x50FA7B
-    # li $a3, 0
-    # jal set_cell
-    
+    jal draw_jar
     jal draw_grid
     
     j game_loop
@@ -155,15 +141,15 @@ generate_block:
     lw $t2, CELL_SIZE
     div $t3, $t2, 2
     sub $t0, $t1, $t2       # Subtract CELL_SIZE from $t1 into $t0
-    # initialize half #1 starting coordinates
+    # Initialize half #1 starting coordinates
     move $s0, $t0
     add $s0, $s0, $t3       # To align with grid correctly
     lw $s1, MIN_Y
     add $s1, $s1, $t3       # To align with grid correctly
-    # initialize half #1 starting color
+    # Initialize half #1 starting color
     jal random_color
     move $s2, $v0
-    # initialize half #2 starting coordinates
+    # Initialize half #2 starting coordinates
     move $s3, $t1
     add $s3, $s3, $t3       # To align with grid correctl
     lw $s4, MIN_Y
@@ -203,6 +189,166 @@ random_color:
     set_color_blue:
         lw $v0, BLUE_COLOR
         jr $ra                  # Return to call in generate_block
+
+##############################################################################
+# JAR DRAWING
+##############################################################################
+
+draw_jar:
+    # Draws the jar onto the grid, with the JAR_COLOR
+    
+    SAVE_RA()
+    
+    lw $a0, JAR_COLOR
+    jal set_jar
+    
+    RESTORE_RA()
+    jr $ra
+
+highlight_jar:
+    # Draws the jar onto the grid, with the CLEAR_COLOR
+    
+    SAVE_RA()
+    
+    lw $a0, CLEAR_COLOR
+    jal set_jar
+    
+    RESTORE_RA()
+    jr $ra
+
+set_jar:
+    # Draws the jar onto the grid with the specified color, based on the MIN_X, MIN_Y, MAX_X, and MAX_Y constants.
+    # Args:
+    #   $a0: color of the jar
+    
+    SAVE_RA()
+    
+    # Set jar color
+    move $a2, $a0
+    
+    # Draw left side of jar
+    lw $a0, MIN_X
+    sub $a0, $a0, 1 
+    lw $a1, MIN_Y
+    sub $a1, $a1, 1
+    lw $a3, MAX_Y
+    sub $a3, $a1, $a3
+    sub $a3, $a3, 2
+    jal draw_line
+    
+    # Draw right side of jar
+    lw $a0, MAX_X
+    add $a0, $a0, 1 
+    lw $a1, MIN_Y
+    sub $a1, $a1, 1
+    lw $a3, MAX_Y
+    sub $a3, $a1, $a3
+    sub $a3, $a3, 2
+    jal draw_line
+    
+    # Draw bottom of jar
+    lw $a0, MIN_X
+    sub $a0, $a0, 1 
+    lw $a1, MAX_Y
+    add $a1, $a1, 1
+    lw $a3, MAX_X
+    sub $a3, $a3, $a0
+    add $a3, $a3, 2
+    jal draw_line
+    
+    # Draw left top of jar
+    lw $a0, MIN_X
+    sub $a0, $a0, 1 
+    lw $a1, MIN_Y
+    sub $a1, $a1, 1
+    lw $a3, LID_MIN_X
+    sub $a3, $a3, $a0
+    # add $a3, $a3, 2
+    jal draw_line
+    
+    # Draw right top of jar
+    lw $a0, LID_MAX_X
+    add $a0, $a0, 1 
+    lw $a1, MIN_Y
+    sub $a1, $a1, 1
+    lw $a3, MAX_X
+    sub $a3, $a3, $a0
+    add $a3, $a3, 2
+    jal draw_line
+    
+    # Draw left lid of jar
+    lw $a0, LID_MIN_X
+    sub $a0, $a0, 1 
+    lw $a1, LID_MIN_Y
+    sub $a1, $a1, 1
+    lw $a3, MIN_Y
+    sub $a3, $a1, $a3
+    # sub $a3, $a3, 2
+    jal draw_line
+    
+    # Draw right lid of jar
+    lw $a0, LID_MAX_X
+    add $a0, $a0, 1 
+    lw $a1, LID_MIN_Y
+    sub $a1, $a1, 1
+    lw $a3, MIN_Y
+    sub $a3, $a1, $a3
+    # sub $a3, $a3, 2
+    jal draw_line
+    
+    RESTORE_RA()
+    jr $ra
+
+draw_line:
+    # Draws a vertical line from the specified coordinates to a length of a color.
+    # Args:
+    #   $a0: x-coordinate of the top left starting position
+    #   $a1: y-coordinate of the top left starting position
+    #   $a2: color of the line
+    #   $a3: length of the line, in pixels, positive for a 
+    #       horizontal line, negative for a vertical line
+    
+    blt $a3, 0, check_vertical_line
+    li $t0, 1
+    li $t1, 0
+    j after_check_vertical_line
+    check_vertical_line:
+    li $t0, 0
+    li $t1, 1
+    sub $a3, $zero, $a3
+    after_check_vertical_line:
+    li $t2, 0                   # Initialize counter
+    
+    sub $sp, $sp, 16
+    sw $ra, 0($sp)
+    sw $t0, 4($sp)
+    sw $t1, 8($sp)
+    sw $t2, 12($sp)
+    
+    while_draw_line:
+        bge $t2, $a3, end_draw_line
+        
+        jal set_pixel
+        lw $t0, 4($sp)
+        lw $t1, 8($sp)
+        lw $t2, 12($sp)
+        
+        # Update coordinates
+        add $a0, $a0, $t0
+        add $a1, $a1, $t1
+        
+        # Increment counter
+        add $t2, $t2, $t0
+        add $t2, $t2, $t1
+        sw $t2, 12($sp)
+        
+        j while_draw_line
+    
+    end_draw_line:
+    lw $ra, 0($sp)
+    addi $sp, $sp, 16
+    jr $ra
+
 
 ##############################################################################
 # GAME LOOP
@@ -1270,7 +1416,7 @@ clear_loop:
     
     li $t6, 0                   # Specify cleared cell counter
     
-    sub $sp, $sp, 36
+    sub $sp, $sp, 44
     sw $a0, 0($sp)
     sw $t0, 4($sp)
     sw $t1, 8($sp)
@@ -1369,6 +1515,8 @@ clear_loop:
                 lw $t5, 28($sp)
                 move $a0, $t5
                 move $a1, $t1
+                sw $a0, 32($sp)
+                sw $a1, 36($sp)
                 j after_check_mark_clear_color
                 
                 check_mark_column_clear_color:
@@ -1381,12 +1529,16 @@ clear_loop:
                 lw $t5, 28($sp)
                 move $a0, $t0
                 move $a1, $t5
+                sw $a0, 32($sp)
+                sw $a1, 36($sp)
                 j after_check_mark_clear_color
                 
                 after_check_mark_clear_color:
                 
+                jal highlight_jar
                 jal pause_tick
-                # lw $a0, 0($sp)
+                lw $a0, 32($sp)
+                lw $a1, 36($sp)
                 lw $t0, 4($sp)
                 lw $t1, 8($sp)
                 lw $t2, 12($sp)
@@ -1413,6 +1565,7 @@ clear_loop:
                 add $t6, $t6, 1
                 sw $t6, 32($sp)
                 
+                jal draw_jar
                 jal pause_tick
                 lw $a0, 0($sp)
                 lw $t0, 4($sp)
@@ -1491,7 +1644,7 @@ clear_loop:
     lw $t6, 32($sp)
     move $v0, $t6
     
-    addi $sp, $sp, 36
+    addi $sp, $sp, 44
     
     j end_restore_ra
 
