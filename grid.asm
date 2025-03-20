@@ -51,6 +51,8 @@ BLUE_COLOR:
     .word 0x8BE9FD
 JAR_COLOR:
     .word 0x6272A4
+JAR_HIGHLIGHT_COLOR:
+    .word 0xFFB86C
 CLEAR_COLOR:
     .word 0xFFB86C
 BACKGROUND_COLOR:
@@ -210,7 +212,7 @@ highlight_jar:
     
     SAVE_RA()
     
-    lw $a0, CLEAR_COLOR
+    lw $a0, JAR_HIGHLIGHT_COLOR
     jal set_jar
     
     RESTORE_RA()
