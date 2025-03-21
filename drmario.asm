@@ -75,7 +75,7 @@ main:
     # Draw background
     jal draw_grid
     
-exit:
+end:
     jr $ra
 
 game_loop:
@@ -97,7 +97,7 @@ initialize_grid:
     lw $t3, BACKGROUND_COLOR    # Load background color      
     
     while_initialize_grid:
-        bge $t0, $t1, exit       # Exit loop if counter ($t0) >= max index ($t1)
+        bge $t0, $t1, end       # Exit loop if counter ($t0) >= max index ($t1)
         sw $t3, 0($t0)           # Save background color into grid index       
         add $t0, $t0, $t2        # Increment counter by pixel size
         j while_initialize_grid
@@ -139,13 +139,13 @@ initialize_jar_lid_right:
     j draw_vertical_line
 
 draw_vertical_line:
-    bge $t0, $t4, exit      # $t0 is current pointer and $t4 is the end of the line
+    bge $t0, $t4, end      # $t0 is current pointer and $t4 is the end of the line
     sw $t3, 0($t0)
     addi $t0, $t0, 240        
     j draw_vertical_line
 
 draw_horizontal_line:
-    bge $t0, $t4, exit      # $t0 is current pointer and $t4 is the end of the line
+    bge $t0, $t4, end      # $t0 is current pointer and $t4 is the end of the line
     sw $t3, 0($t0)
     addi $t0, $t0, 4
     j draw_horizontal_line
@@ -157,7 +157,7 @@ draw_grid:
     lw $t2, PIXEL_SIZE      # Load pixel size ($t2)
     lw $t3, ADDR_DSPL       # Load display address ($t3) into counter
     while_draw_grid:
-        bge $t0, $t1, exit  # Exit loop if counter ($t0) >= max index ($t1)
+        bge $t0, $t1, end  # Exit loop if counter ($t0) >= max index ($t1)
         lw $t4, 0($t0)      # Load the color from the grid ($t4)
         sw $t4, 0($t3)      # Save color into display index 
         add $t0, $t0, $t2   # Increment grid counter by pixel size
