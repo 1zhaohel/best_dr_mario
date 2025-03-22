@@ -1069,6 +1069,66 @@ set_cell:
     addi $sp, $sp, 12
     jr $ra
 
+set_virus:
+    # Draw the virus with the specified coordinates, with the specified 
+    # color depending on the CELL_SIZE.
+    # Args:
+    #   $a0: x-coordinate of the cell
+    #   $a1: y-coordinate of the cell
+    #   $a2: color of the cell
+    
+    # Calculate half of cell size
+    lw $t6, CELL_SIZE
+    div $t6, $t6, 2
+    
+    # Save $ra, $a0, $a1
+    sub $sp, $sp, 12
+    sw $ra, 0($sp)
+    sw $a0, 4($sp)
+    sw $a1, 8($sp)
+    
+    # Set top left
+    sub $a0, $a0, $t6
+    sub $a1, $a1, $t6
+    jal set_pixel
+    
+    lw $a0, 4($sp)
+    lw $a1, 8($sp)
+    
+    # Set top right
+    add $a0, $a0, $t6
+    sub $a1, $a1, $t6
+    jal set_pixel
+    
+    lw $a0, 4($sp)
+    lw $a1, 8($sp)
+    
+    # Set middle left
+    sub $a0, $a0, $t6
+    jal set_pixel
+    
+    lw $a0, 4($sp)
+    
+    # Set middle right
+    add $a0, $a0, $t6
+    jal set_pixel
+    
+    lw $a0, 4($sp)
+    
+    # Set bottom middle
+    add $a1, $a1, $t6
+    jal set_pixel
+    
+    lw $a1, 8($sp)
+    
+    # Set middle
+    jal set_pixel
+    
+    # Restore $ra
+    lw $ra, 0($sp)
+    addi $sp, $sp, 12
+    jr $ra
+
 get_pixel:
     # Get the pixel at the specified coordinates in the grid.
     # Args:
