@@ -84,6 +84,28 @@ main:
     jal generate_block
     jal reset_timer
     jal initialize_grid
+    
+    # Stat: Test virus code (TO BE DELETED)
+    # li $a0, 31
+    # li $a1, 55
+    # lw $a2, RED_COLOR
+    # jal set_virus
+    
+    # li $a0, 31
+    # li $a1, 31
+    # lw $a2, BLUE_COLOR
+    # jal set_virus
+    
+    # jal is_virus
+    # li $t0, 1
+    # beq $v0, $t0, end_game
+    
+    # jal fall_cell
+
+    # jal get_cell_orientation
+    
+    # End: Test virus code (TO BE DELETED)
+    
     jal draw_jar
     jal draw_grid
     
@@ -1064,6 +1086,16 @@ set_cell:
     add $a1, $a1, $t6
     jal set_pixel
     
+    lw $a0, 4($sp)
+    lw $a1, 8($sp)
+    
+    # Set middle
+    lw $a2, BACKGROUND_COLOR
+    jal set_pixel
+    
+    lw $a0, 4($sp)
+    lw $a1, 8($sp)
+    
     # Restore $ra
     lw $ra, 0($sp)
     addi $sp, $sp, 12
@@ -1325,6 +1357,17 @@ get_cell_orientation:
     sw $ra, 0($sp)
     sw $a0, 4($sp)
     sw $a1, 8($sp)
+    
+    # Ignore cell if virus
+    jal is_virus
+    li $t0, 1
+    bne $v0, $t0, after_check_get_cell_orientation
+    li $v0, 0
+    j after_get_cell_orientation
+    
+    after_check_get_cell_orientation:
+    lw $a0, 4($sp)
+    lw $a1, 8($sp)
     
     jal get_cell
     lw $a0, 4($sp)
@@ -1877,14 +1920,25 @@ can_fall_cell:
     sw $a0, 4($sp)
     sw $a1, 8($sp)
 
-    # Ignore cell if background
+    # Check 1: Ignore cell if background
     jal get_cell
     lw $t0, BACKGROUND_COLOR
-    bne $v0, $t0, after_check_can_fall_cell
+    bne $v0, $t0, after_check1_can_fall_cell
     li $v0, 0
     j end_can_fall_cell
     
-    after_check_can_fall_cell:
+    after_check1_can_fall_cell:
+    # Check 2: Ignore cell if virus
+    lw $a0, 4($sp)
+    lw $a1, 8($sp)
+    
+    jal is_virus
+    li $t0, 1
+    bne $v0, $t0, after_check2_can_fall_cell
+    li $v0, 0
+    j end_can_fall_cell
+    
+    after_check2_can_fall_cell:
     lw $a0, 4($sp)
     lw $a1, 8($sp)
     
@@ -1993,3 +2047,32 @@ fall_cell:
     lw $ra, 0($sp)
     addi $sp, $sp, 12
     jr $ra
+    
+is_virus:
+    # Return whether or not the cell specified at the given coordinate 
+    # is a virus or not. 
+    # Args:
+    #   $a0: x-coordinate of the cell
+    #   $a1: y-coordinate of the cell
+    # Returns: 
+    #   $v0 = 0 if cell is not a virus, $v0 = 1 if cell is a virus
+    
+    # Save $ra before calling get_pixel
+    SAVE_RA()
+    
+    jal get_pixel # Color of pixel is stored in $v0
+    lw $t0, BACKGROUND_COLOR
+    
+    # Compare pixel color with background color
+    beq $v0, $t0, not_virus 
+    li $v0, 1 
+    j end_check_is_virus
+    
+    not_virus:
+        li $v0, 0
+    
+    end_check_is_virus:
+        # Restore $ra after returning from get_pixel
+        RESTORE_RA()
+        jr $ra
+    
