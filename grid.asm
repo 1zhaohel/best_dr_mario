@@ -185,7 +185,7 @@ generate_block:
     # Restore $ra (in main after generate_block) after random_color
     RESTORE_RA()
     jr $ra
-
+    
 random_color:
     # Generate a random color from RED_COLOR, YELLOW_COLOR, or 
     # BLUE_COLOR.
@@ -380,7 +380,6 @@ draw_line:
 game_loop:
     # Game loop that repeatedly loops until the user quits or the game
     # ends.
-    
     jal clear_block
     jal keyboard_input
     jal increment_timer
@@ -394,10 +393,10 @@ game_loop:
 ##############################################################################
 
 update_block:
-    # Draw the block at the its currently set location.
+    # Draw the block at its currently set location.
     # Args:
     #   $s0: x-coordinate of half #1 of the block
-    #   $s1: y-coordinate of half #2 of the block
+    #   $s1: y-coordinate of half #1 of the block
     #   $s2: color of half #1 of the block
     #   $s3: x-coordinate of half #2 of the block
     #   $s4: y-coorindate of half #2 of the block
@@ -416,7 +415,7 @@ clear_block:
     # Clear the block from its currently set location.
     # Args:
     #   $s0: x-coordinate of half #1 of the block
-    #   $s1: y-coordinate of half #2 of the block
+    #   $s1: y-coordinate of half #1 of the block
     #   $s3: x-coordinate of half #2 of the block
     #   $s4: y-coorindate of half #2 of the block
 
@@ -436,7 +435,7 @@ draw_block:
     # Args:
     #   $a0: 0 to clear or 1 to draw the block
     #   $s0: x-coordinate of half #1 of the block
-    #   $s1: y-coordinate of half #2 of the block
+    #   $s1: y-coordinate of half #1 of the block
     #   $s2: color of half #1 of the block
     #   $s3: x-coordinate of half #2 of the block
     #   $s4: y-coorindate of half #2 of the block
@@ -444,7 +443,7 @@ draw_block:
     
     move $t0, $a0
     
-    # Save $ra and $t0 before set_pixel
+    # Save $ra and $t0 before get_block_orientation
     sub $sp, $sp, 16
     sw $ra, 0($sp)
     sw $t0, 4($sp)
@@ -741,11 +740,48 @@ move_down:
     j end_restore_ra
     
     place_down_block:
+        jal is_entrance_blocked 
         jal update_block
         jal simulate_grid
         jal generate_block
         
         j end_restore_ra
+
+
+is_entrance_blocked:
+    # Ends game if bottle entrance is blocked. Continues otherwise.
+    # Logic: If placing down the block matches the coordinates of 
+    #   generate_block, end game.
+    # Args:
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+    
+    # Calculate Generate Block Coordinates (maybe make a get func)
+    lw $t0 DISPLAY_WIDTH
+    div $t1, $t0, 2         # Halve the display width into $t1
+    lw $t2, CELL_SIZE
+    div $t3, $t2, 2
+    sub $t0, $t1, $t2       # Subtract CELL_SIZE from $t1 into $t0
+    # Initialize half #1 starting coordinates
+    add $t0, $t0, $t3       # To align with grid correctly
+    lw $t2, MIN_Y
+    add $t2, $t2, $t3       # To align with grid correctly
+    # Initialize half #2 starting coordinates
+    move $t4, $t1
+    add $t4, $t4, $t3       # To align with grid correctl
+    lw $t5, MIN_Y
+    add $t5, $t5, $t3       # To align with grid correctly
+    
+    bne $t0, $s0, end_is_entrance_blocked
+    bne $t2, $s1, end_is_entrance_blocked
+    bne $t4, $s3, end_is_entrance_blocked
+    bne $t5, $s4, end_is_entrance_blocked
+    j end_game
+    
+    end_is_entrance_blocked:
+        jr $ra
 
 move_right:
     # Attempt to move the block to the right.
