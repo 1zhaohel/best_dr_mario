@@ -85,26 +85,21 @@ main:
     jal reset_timer
     jal initialize_grid
     
-    # Stat: Test virus code (TO BE DELETED)
-    # li $a0, 31
-    # li $a1, 55
-    # lw $a2, RED_COLOR
-    # jal set_virus
+    # Set Viruses
+    li $a0, 49
+    li $a1, 55
+    lw $a2, RED_COLOR
+    jal set_virus
     
-    # li $a0, 31
-    # li $a1, 31
-    # lw $a2, BLUE_COLOR
-    # jal set_virus
+    li $a0, 31
+    li $a1, 31
+    lw $a2, BLUE_COLOR
+    jal set_virus
     
-    # jal is_virus
-    # li $t0, 1
-    # beq $v0, $t0, end_game
-    
-    # jal fall_cell
-
-    # jal get_cell_orientation
-    
-    # End: Test virus code (TO BE DELETED)
+    li $a0, 22
+    li $a1, 46
+    lw $a2, YELLOW_COLOR
+    jal set_virus
     
     jal draw_jar
     jal draw_grid
