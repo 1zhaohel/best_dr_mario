@@ -1073,7 +1073,6 @@ is_entrance_blocked:
     
     move $a0, $t4
     move $a1, $t5
-    lw $a2, RED_COLOR
     jal get_cell
     bne $v0, $t8, end_game
     
