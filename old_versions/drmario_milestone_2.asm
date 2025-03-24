@@ -1,11 +1,31 @@
-    .data
+################# CSC258 Assembly Final Project ###################
+# This file contains our implementation of Dr Mario.
+#
+# Student 1: Helen Zhao, 1010138995
+# Student 2: Alan Su, 1010294209
+#
+# We assert that the code submitted here is entirely our own 
+# creation, and will indicate otherwise when it is not.
+#
+######################## Bitmap Display Configuration ########################
+# - Unit width in pixels:       1
+# - Unit height in pixels:      1
+# - Display width in pixels:    120
+# - Display height in pixels:   60
+# - Base Address for Display:   0x10008000 ($gp)
+##############################################################################
+
+    .data 
+##############################################################################
+# Immutable Data
+##############################################################################
 ADDR_DSPL:
     .word 0x10008000
 ADDR_KBRD:
     .word 0xffff0000
 
-GRID:
-    .space 4096 # 32 * 32 * 4
+# GRID:
+    # .space 4096 # 32 * 32 * 4
 GRID_SIZE:
     .word 4096
 DISPLAY_WIDTH:
@@ -37,6 +57,15 @@ BLUE_COLOR:
 BACKGROUND_COLOR:
     .word 0x000000
 
+##############################################################################
+# Mutable Data
+##############################################################################
+GRID:
+    .space 4096 # 32 * 32 * 4
+##############################################################################
+# Code
+##############################################################################
+	
 
     .text
 	.globl main
