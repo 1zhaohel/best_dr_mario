@@ -313,6 +313,23 @@ main:
     jal generate_block
     jal reset_timer
     jal initialize_grid
+    
+    # Set Viruses
+    li $a0, 49
+    li $a1, 55
+    lw $a2, RED_COLOR
+    jal set_virus
+    
+    li $a0, 31
+    li $a1, 31
+    lw $a2, BLUE_COLOR
+    jal set_virus
+    
+    li $a0, 22
+    li $a1, 46
+    lw $a2, YELLOW_COLOR
+    jal set_virus
+    
     jal draw_jar
     
     li $a0, 60
@@ -408,7 +425,7 @@ generate_block:
     # Restore $ra (in main after generate_block) after random_color
     RESTORE_RA()
     jr $ra
-
+    
 random_color:
     # Generate a random color from RED_COLOR, YELLOW_COLOR, or 
     # BLUE_COLOR.
@@ -658,7 +675,6 @@ draw_pixel_art:
 game_loop:
     # Game loop that repeatedly loops until the user quits or the game
     # ends.
-    
     jal clear_block
     jal keyboard_input
     jal increment_timer
@@ -672,10 +688,10 @@ game_loop:
 ##############################################################################
 
 update_block:
-    # Draw the block at the its currently set location.
+    # Draw the block at its currently set location.
     # Args:
     #   $s0: x-coordinate of half #1 of the block
-    #   $s1: y-coordinate of half #2 of the block
+    #   $s1: y-coordinate of half #1 of the block
     #   $s2: color of half #1 of the block
     #   $s3: x-coordinate of half #2 of the block
     #   $s4: y-coorindate of half #2 of the block
@@ -694,7 +710,7 @@ clear_block:
     # Clear the block from its currently set location.
     # Args:
     #   $s0: x-coordinate of half #1 of the block
-    #   $s1: y-coordinate of half #2 of the block
+    #   $s1: y-coordinate of half #1 of the block
     #   $s3: x-coordinate of half #2 of the block
     #   $s4: y-coorindate of half #2 of the block
 
@@ -714,7 +730,7 @@ draw_block:
     # Args:
     #   $a0: 0 to clear or 1 to draw the block
     #   $s0: x-coordinate of half #1 of the block
-    #   $s1: y-coordinate of half #2 of the block
+    #   $s1: y-coordinate of half #1 of the block
     #   $s2: color of half #1 of the block
     #   $s3: x-coordinate of half #2 of the block
     #   $s4: y-coorindate of half #2 of the block
@@ -722,7 +738,7 @@ draw_block:
     
     move $t0, $a0
     
-    # Save $ra and $t0 before set_pixel
+    # Save $ra and $t0 before get_block_orientation
     sub $sp, $sp, 16
     sw $ra, 0($sp)
     sw $t0, 4($sp)
@@ -1019,11 +1035,48 @@ move_down:
     j end_restore_ra
     
     place_down_block:
+        jal is_entrance_blocked 
         jal update_block
         jal simulate_grid
         jal generate_block
         
         j end_restore_ra
+
+
+is_entrance_blocked:
+    # Ends game if bottle entrance is blocked. Continues otherwise.
+    # Logic: If placing down the block matches the coordinates of 
+    #   generate_block, end game.
+    # Args:
+    #   $s0: x-coordinate of half #1 of the block
+    #   $s1: y-coordinate of half #2 of the block
+    #   $s3: x-coordinate of half #2 of the block
+    #   $s4: y-coorindate of half #2 of the block
+    
+    # Calculate Generate Block Coordinates (maybe make a get func)
+    lw $t0 DISPLAY_WIDTH
+    div $t1, $t0, 2         # Halve the display width into $t1
+    lw $t2, CELL_SIZE
+    div $t3, $t2, 2
+    sub $t0, $t1, $t2       # Subtract CELL_SIZE from $t1 into $t0
+    # Initialize half #1 starting coordinates
+    add $t0, $t0, $t3       # To align with grid correctly
+    lw $t2, MIN_Y
+    add $t2, $t2, $t3       # To align with grid correctly
+    # Initialize half #2 starting coordinates
+    move $t4, $t1
+    add $t4, $t4, $t3       # To align with grid correctl
+    lw $t5, MIN_Y
+    add $t5, $t5, $t3       # To align with grid correctly
+    
+    bne $t0, $s0, end_is_entrance_blocked
+    bne $t2, $s1, end_is_entrance_blocked
+    bne $t4, $s3, end_is_entrance_blocked
+    bne $t5, $s4, end_is_entrance_blocked
+    j end_game
+    
+    end_is_entrance_blocked:
+        jr $ra
 
 move_right:
     # Attempt to move the block to the right.
@@ -1364,6 +1417,76 @@ set_cell:
     add $a1, $a1, $t6
     jal set_pixel
     
+    lw $a0, 4($sp)
+    lw $a1, 8($sp)
+    
+    # Set middle
+    lw $a2, BACKGROUND_COLOR
+    jal set_pixel
+    
+    lw $a0, 4($sp)
+    lw $a1, 8($sp)
+    
+    # Restore $ra
+    lw $ra, 0($sp)
+    addi $sp, $sp, 12
+    jr $ra
+
+set_virus:
+    # Draw the virus with the specified coordinates, with the specified 
+    # color depending on the CELL_SIZE.
+    # Args:
+    #   $a0: x-coordinate of the cell
+    #   $a1: y-coordinate of the cell
+    #   $a2: color of the cell
+    
+    # Calculate half of cell size
+    lw $t6, CELL_SIZE
+    div $t6, $t6, 2
+    
+    # Save $ra, $a0, $a1
+    sub $sp, $sp, 12
+    sw $ra, 0($sp)
+    sw $a0, 4($sp)
+    sw $a1, 8($sp)
+    
+    # Set top left
+    sub $a0, $a0, $t6
+    sub $a1, $a1, $t6
+    jal set_pixel
+    
+    lw $a0, 4($sp)
+    lw $a1, 8($sp)
+    
+    # Set top right
+    add $a0, $a0, $t6
+    sub $a1, $a1, $t6
+    jal set_pixel
+    
+    lw $a0, 4($sp)
+    lw $a1, 8($sp)
+    
+    # Set middle left
+    sub $a0, $a0, $t6
+    jal set_pixel
+    
+    lw $a0, 4($sp)
+    
+    # Set middle right
+    add $a0, $a0, $t6
+    jal set_pixel
+    
+    lw $a0, 4($sp)
+    
+    # Set bottom middle
+    add $a1, $a1, $t6
+    jal set_pixel
+    
+    lw $a1, 8($sp)
+    
+    # Set middle
+    jal set_pixel
+    
     # Restore $ra
     lw $ra, 0($sp)
     addi $sp, $sp, 12
@@ -1565,6 +1688,17 @@ get_cell_orientation:
     sw $ra, 0($sp)
     sw $a0, 4($sp)
     sw $a1, 8($sp)
+    
+    # Ignore cell if virus
+    jal is_virus
+    li $t0, 1
+    bne $v0, $t0, after_check_get_cell_orientation
+    li $v0, 0
+    j after_get_cell_orientation
+    
+    after_check_get_cell_orientation:
+    lw $a0, 4($sp)
+    lw $a1, 8($sp)
     
     jal get_cell
     lw $a0, 4($sp)
@@ -2117,14 +2251,25 @@ can_fall_cell:
     sw $a0, 4($sp)
     sw $a1, 8($sp)
 
-    # Ignore cell if background
+    # Check 1: Ignore cell if background
     jal get_cell
     lw $t0, BACKGROUND_COLOR
-    bne $v0, $t0, after_check_can_fall_cell
+    bne $v0, $t0, after_check1_can_fall_cell
     li $v0, 0
     j end_can_fall_cell
     
-    after_check_can_fall_cell:
+    after_check1_can_fall_cell:
+    # Check 2: Ignore cell if virus
+    lw $a0, 4($sp)
+    lw $a1, 8($sp)
+    
+    jal is_virus
+    li $t0, 1
+    bne $v0, $t0, after_check2_can_fall_cell
+    li $v0, 0
+    j end_can_fall_cell
+    
+    after_check2_can_fall_cell:
     lw $a0, 4($sp)
     lw $a1, 8($sp)
     
@@ -2233,3 +2378,32 @@ fall_cell:
     lw $ra, 0($sp)
     addi $sp, $sp, 12
     jr $ra
+    
+is_virus:
+    # Return whether or not the cell specified at the given coordinate 
+    # is a virus or not. 
+    # Args:
+    #   $a0: x-coordinate of the cell
+    #   $a1: y-coordinate of the cell
+    # Returns: 
+    #   $v0 = 0 if cell is not a virus, $v0 = 1 if cell is a virus
+    
+    # Save $ra before calling get_pixel
+    SAVE_RA()
+    
+    jal get_pixel # Color of pixel is stored in $v0
+    lw $t0, BACKGROUND_COLOR
+    
+    # Compare pixel color with background color
+    beq $v0, $t0, not_virus 
+    li $v0, 1 
+    j end_check_is_virus
+    
+    not_virus:
+        li $v0, 0
+    
+    end_check_is_virus:
+        # Restore $ra after returning from get_pixel
+        RESTORE_RA()
+        jr $ra
+    
