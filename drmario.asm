@@ -307,6 +307,49 @@ DR_MARIO_ENGELS_DATA:
       0,   55,    0xe8e7ec,      1,   55,    0xf1f2f4,      2,   55,    0xf0f0f2,      3,   55,    0xe9e9eb,      4,   55,    0xe9e9eb,      5,   55,    0xeeeeee,      6,   55,    0x4b4c4f,      7,   55,    0xe2e3e4,      8,   55,    0xe4e3e8,      9,   55,    0xe7e7e9,     10,   55,    0xe3e2e5,     11,   55,    0x4f4f53,     12,   55,    0x4c4c50,     13,   55,    0xe6e6e7,     14,   55,    0xe5e7e9,     15,   55,    0xeaeaee,     16,   55,    0xdddddf,     17,   55,    0xefeff1,     18,   55,    0xe5e6ea,     19,   55,    0xe5e6e7,     20,   55,    0xedeef2,     21,   55,    0xe5e2e9,     22,   55,    0xe4e1e8,     23,   55,    0x9aa9b8,     24,   55,    0xa7b7cf,     25,   55,    0x824653,     26,   55,    0x804451,     27,   55,    0x7b414b,     28,   55,    0x7e444f,     29,   55,    0x9aaabd,     30,   55,    0xffffff,     31,   55,    0xdddae0,     32,   55,    0xe1dee5,     33,   55,    0xe5e3e9,     34,   55,    0x4c4d50,     35,   55,    0xd4d4d4,     36,   55,    0xd2d4d3,     37,   55,    0xc6c6c8,
       0,   56,    0xe9e8ed,      1,   56,    0xe4e4e6,      2,   56,    0xebe9ec,      3,   56,    0xe9e8ea,      4,   56,    0xe7e7e9,      5,   56,    0xebe9eb,      6,   56,    0x4d4d50,      7,   56,    0x4a4a4d,      8,   56,    0xe4e6e8,      9,   56,    0xe8eaea,     10,   56,    0xe7e6eb,     11,   56,    0xececf0,     12,   56,    0x4c4c50,     13,   56,    0xe7e5e8,     14,   56,    0xedeef0,     15,   56,    0xe5e4e6,     16,   56,    0xe3e3e5,     17,   56,    0xe6e5eb,     18,   56,    0xebebea,     19,   56,    0xe5e5e4,     20,   56,    0xe7e7e9,     21,   56,    0xe1e5e7,     22,   56,    0xe8e8ea,     23,   56,    0xe0e1df,     24,   56,    0xe0e9ff,     25,   56,    0x94a4b8,     26,   56,    0x7f4350,     27,   56,    0x7f424f,     28,   56,    0x763f49,     29,   56,    0x7d434f,     30,   56,    0x8495a2,     31,   56,    0xe6e5e6,     32,   56,    0xdedee0,     33,   56,    0xe0e2e2,     34,   56,    0xe0e2e4,     35,   56,    0x49484c,     36,   56,    0xd2d4d3,     37,   56,    0xc3c4c5,
 DR_MARIO_ENGELS_SIZE: .word 1495
+
+
+RED_VIRUS_DATA:
+      3,    0,    0xff78c7,
+      4,    1,    0xfc7bc4,      8,    1,    0xfc78c7,
+      1,    2,    0xff79c5,      3,    2,    0xfd7ac6,      4,    2,    0xfe79c7,      5,    2,    0xff78c5,      7,    2,    0xfe79c6,
+      2,    3,    0xfd79c5,      3,    3,    0xfc7bc5,      4,    3,    0xfd79c5,      5,    3,    0xfe78c5,      6,    3,    0xff79c4,      7,    3,    0xfe78c7,
+      0,    4,    0xfe7bc6,      2,    4,    0xfd79c6,      3,    4,    0xb8297d,      4,    4,    0xff79c6,      5,    4,    0xba287e,      6,    4,    0xfc7ac7,      7,    4,    0xfe7bc7,      8,    4,    0xff78c4,
+      1,    5,    0xfc79c4,      2,    5,    0xfe7bc7,      3,    5,    0xfe7bc4,      4,    5,    0xfd79c4,      5,    5,    0xfd78c4,      6,    5,    0xfe79c4,      7,    5,    0xff78c6,
+      2,    6,    0xff79c5,      3,    6,    0xfe7bc6,      4,    6,    0xfd78c4,      5,    6,    0xff7ac5,      6,    6,    0xfd79c7,      7,    6,    0xfe79c6,      8,    6,    0xfd78c6,
+      1,    7,    0xfc78c5,      3,    7,    0xfc7bc4,      4,    7,    0xfc7ac6,      5,    7,    0xff7ac4,      6,    7,    0xfe7bc6,
+      4,    8,    0xfc7ac5,      6,    8,    0xfd78c4,
+      3,    9,    0xfe7ac4,      7,    9,    0xff79c4,
+RED_VIRUS_SIZE: .word 45
+
+
+BLUE_VIRUS_DATA:
+      3,    0,    0x8be9fe,
+      4,    1,    0x88ebfe,      8,    1,    0x88eafc,
+      1,    2,    0x8aeafc,      3,    2,    0x8be9fc,      4,    2,    0x8beafd,      5,    2,    0x8be8fd,      7,    2,    0x8aeafe,
+      2,    3,    0x8be9fc,      3,    3,    0x89e9ff,      4,    3,    0x1f4954,      5,    3,    0x8be9fd,      6,    3,    0x8aeafe,      7,    3,    0x8ae8fd,
+      0,    4,    0x8ae9fd,      2,    4,    0x8aeafe,      3,    4,    0x8aebfe,      4,    4,    0x8be9ff,      5,    4,    0x89e8fc,      6,    4,    0x1f4b55,      7,    4,    0x89e9fd,      8,    4,    0x8beafc,
+      1,    5,    0x8bebfe,      2,    5,    0x8aeaff,      3,    5,    0x89e8fc,      4,    5,    0x88e9ff,      5,    5,    0x89e9fe,      6,    5,    0x89e8ff,      7,    5,    0x89ebfd,
+      2,    6,    0x8bebfe,      3,    6,    0x88e8fc,      4,    6,    0x8be9ff,      5,    6,    0x89e8fd,      6,    6,    0x89ebfc,      7,    6,    0x8ae9fc,      8,    6,    0x8ae8ff,
+      1,    7,    0x8aeafd,      3,    7,    0x89eaff,      4,    7,    0x8be8fe,      5,    7,    0x8aeaff,      6,    7,    0x8ae9ff,
+      4,    8,    0x88e9fd,      6,    8,    0x88ebfe,
+      3,    9,    0x89e8ff,      7,    9,    0x88e9fd,
+BLUE_VIRUS_SIZE: .word 45
+
+YELLOW_VIRUS_DATA:
+      3,    0,    0xf1f98e,
+      4,    1,    0xf3fb8e,      8,    1,    0xf0f98e,
+      1,    2,    0xf3fa8c,      3,    2,    0xf3fb8e,      4,    2,    0xf3f98d,      5,    2,    0xf0f88d,      7,    2,    0xf3f88f,
+      2,    3,    0xf2fb8f,      3,    3,    0xf1fa8e,      4,    3,    0x716f4b,      5,    3,    0xf0f98f,      6,    3,    0xf2fb8c,      7,    3,    0xf0fb8e,
+      0,    4,    0xf0fa8c,      2,    4,    0xf0fa8d,      3,    4,    0xf0f98c,      4,    4,    0xf2fb8f,      5,    4,    0xf1f88f,      6,    4,    0xf2f98f,      7,    4,    0xf1fa8f,      8,    4,    0xf1f88c,
+      1,    5,    0xf1f98c,      2,    5,    0xf0fb8d,      3,    5,    0x716f4b,      4,    5,    0xf1f88f,      5,    5,    0xf3f98f,      6,    5,    0x706e4a,      7,    5,    0xf3f88f,
+      2,    6,    0xf3fb8f,      3,    6,    0xf2f88e,      4,    6,    0xf2fa8c,      5,    6,    0xf0fa8e,      6,    6,    0xf0fb8e,      7,    6,    0xf3f98c,      8,    6,    0xf0f88d,
+      1,    7,    0xf1fa8c,      3,    7,    0xf1fb8f,      4,    7,    0xf3fb8f,      5,    7,    0xf3f88c,      6,    7,    0xf1f88c,
+      4,    8,    0xf0f98f,      6,    8,    0xf3f88d,
+      3,    9,    0xf0f88e,      7,    9,    0xf1fb8e,
+YELLOW_VIRUS_SIZE: .word 45
+
+
 ##############################################################################
 # Mutable Data
 ##############################################################################
@@ -361,16 +404,34 @@ main:
     
     jal draw_jar
     
-    li $a0, 60
-    li $a1, 3
+    li $a0, 100
+    li $a1, 20
     la $a2, DR_MARIO_DATA
     lw $a3, DR_MARIO_SIZE
     jal draw_pixel_art
     
-    li $a0, 70
-    li $a1, 0
+    li $a0, 53
+    li $a1, 2
     la $a2, DR_MARIO_ENGELS_DATA
     lw $a3, DR_MARIO_ENGELS_SIZE
+    jal draw_pixel_art
+    
+    li $a0, 90
+    li $a1, 10
+    la $a2, RED_VIRUS_DATA
+    lw $a3, RED_VIRUS_SIZE
+    jal draw_pixel_art
+    
+    li $a0, 90
+    li $a1, 25
+    la $a2, BLUE_VIRUS_DATA
+    lw $a3, BLUE_VIRUS_SIZE
+    jal draw_pixel_art
+    
+    li $a0, 90
+    li $a1, 40
+    la $a2, YELLOW_VIRUS_DATA
+    lw $a3, YELLOW_VIRUS_SIZE
     jal draw_pixel_art
     
     jal draw_grid
