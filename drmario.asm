@@ -43,7 +43,9 @@ CLEAR_LENGTH:
 
 # Framerate and timing
 FRAMERATE:
-    .word 180
+    .word 180 
+MIN_FRAMERATE:
+    .word 20
 ANIMATION_MULTIPLIER:
     .word 1
 
@@ -661,6 +663,16 @@ highlight_jar:
     lw $a0, JAR_HIGHLIGHT_COLOR
     jal set_jar
     
+    # Decrease framerate 
+    lw $t0, FRAMERATE
+    lw $t1, MIN_FRAMERATE
+    beq $t0, $t1, skip_decrease_framerate
+    
+    addi $t0, $t0, -5
+    sw $t0, FRAMERATE
+    
+    skip_decrease_framerate: 
+    
     RESTORE_RA()
     jr $ra
 
@@ -1153,6 +1165,10 @@ pause_loop:
         lw $a0, ADDR_KBRD               # Load base address for keyboard ($t0)
         lw $t1, 0($a0)                  # Load first word from keyboard ($t1)
         beq $t1, 0, restart_check       # If no key is pressed, keep checking
+        
+        # Reset framerate
+        li $t0, 180
+        sw $t0, FRAMERATE
         
         lw $a0, 4($a0)                  # Load second word for actual key value
         beq $a0, 114, main              # If 'r' is pressed, restart game
@@ -2224,7 +2240,7 @@ clear_loop:
         sw $t3, 16($sp)
         j after_clear_color_counter
         
-        start_clear_color_counter:                    # Start the color counter at 1
+        start_clear_color_counter:                    # Start the color counter at 1 
             la $ra, after_start_clear_color_counter
             lw $t5, CLEAR_LENGTH
             move $t4, $v0
