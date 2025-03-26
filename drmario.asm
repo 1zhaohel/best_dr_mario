@@ -1121,6 +1121,7 @@ pause_loop:
         
         lw $a0, 4($a0)                  # Load second word for actual key value
         beq $a0, 112, after_pause       # If 'p' is pressed, exit pause
+        beq $a0, 113, end_game          # If 'q' is pressed, end game
         
         j pause_check                   # Otherwise, keep checking for input
     
@@ -1155,6 +1156,7 @@ pause_loop:
         
         lw $a0, 4($a0)                  # Load second word for actual key value
         beq $a0, 114, main              # If 'r' is pressed, restart game
+        beq $a0, 113, end_game          # If 'q' is pressed, end game
         
         j restart_check                   # Otherwise, keep checking for input
         
